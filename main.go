@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 )
 
 type Perturbation struct {
@@ -30,7 +31,12 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
-	http.HandleFunc(os.Getenv("SERVER_ADDR"), handleWebSocket1)
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error al cargar archivo .env")
+	}
+
+	http.HandleFunc(os.Getenv("PATH"), handleWebSocket1)
 
 	// Iniciar el servidor HTTP en el puerto 8010
 	log.Fatal(http.ListenAndServe(os.Getenv("SERVER_ADDR"), nil))
@@ -44,6 +50,13 @@ func handleWebSocket1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+
+	msg := []byte("message")
+
+	err = conn.WriteMessage(websocket.TextMessage, msg)
+	if err != nil {
+		log.Println("Error al escribir el mensaje:", err)
+	}
 
 	fmt.Print("Hola")
 }
