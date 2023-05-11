@@ -19,10 +19,10 @@ type Perturbation struct {
 }
 
 type VehicleState struct {
-	XDistance float64 //It goes between 22mm and 10 mm
-	XRotation float64
-	YRotation float64
-	ZRotation float64
+	XDistance float64 `json:"xDistance"` //It goes between 22mm and 10 mm
+	XRotation float64 `json:"xRotation"`
+	// YRotation float64
+	// ZRotation float64
 }
 
 var upgrader = websocket.Upgrader{
@@ -36,77 +36,70 @@ func main() {
 		fmt.Println("Error al cargar archivo .env")
 	}
 
-	http.HandleFunc(os.Getenv("PATH"), handleWebSocket1)
+	vehicleState := createVehicleState()
 
+	fmt.Println(vehicleState)
+
+	vehicleStateJson, _ := json.Marshal(vehicleState)
+
+	fmt.Println(vehicleStateJson)
+	fmt.Println(string(vehicleStateJson))
+
+	vehicleStateUnmarshalled := &VehicleState{}
+	json.Unmarshal(vehicleStateJson, vehicleStateUnmarshalled)
+
+	fmt.Println(vehicleStateUnmarshalled)
+
+	http.HandleFunc(os.Getenv("PATH"), handleWebSocket)
+
+	fmt.Println("Listening in", os.Getenv("SERVER_ADDR"))
 	// Iniciar el servidor HTTP en el puerto 8010
 	log.Fatal(http.ListenAndServe(os.Getenv("SERVER_ADDR"), nil))
-}
 
-func handleWebSocket1(w http.ResponseWriter, r *http.Request) {
-
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println("Error al actualizar la conexión:", err)
-		return
-	}
-	defer conn.Close()
-
-	msg := []byte("message")
-
-	err = conn.WriteMessage(websocket.TextMessage, msg)
-	if err != nil {
-		log.Println("Error al escribir el mensaje:", err)
-	}
-
-	fmt.Print("Hola")
 }
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("Error al actualizar la conexión:", err)
+		log.Println("Error upgrading connection:", err)
 		return
 	}
 	defer conn.Close()
 
-	// Leer los mensajes enviados por el cliente
-	//Pruebas lectura de mensaje
-	// for {
-	// 	_, message, err := conn.ReadMessage()
-	// 	json.RawMessage
-	// 	var myStruct Message
+	vehicleState := createVehicleState()
 
-	// 	json.Unmarshal(message, myStruct)
+	fmt.Println(vehicleState)
 
-	// 	if err != nil {
-	// 		log.Println("Error al leer el mensaje:", err)
-	// 		break
-	// 	}
-	// 	log.Printf("Mensaje recibido: %s\n", message)
+	ticker := time.NewTicker(1 * time.Second)
+	quit := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				vehicleState := createVehicleState()
+				errMarshal := conn.WriteJSON(vehicleState)
 
-	// 	// Responder al cliente con el mismo mensaje recibido
-	// 	err = conn.WriteMessage(websocket.TextMessage, message)
-	// 	if err != nil {
-	// 		log.Println("Error al escribir el mensaje:", err)
-	// 		break
-	// 	}
-	// }
+				if errMarshal != nil {
+					log.Println("Error marshalling:", errMarshal)
+					return
+				}
+
+				fmt.Println("struct sent!", vehicleState)
+			case <-quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
 
 }
 
-func sendingVehicleState(conn *websocket.Conn, vehicleState VehicleState) {
-	buf, err := json.Marshal(vehicleState)
-
-	if err != nil {
-		log.Println("Error marshalling the JSON:", err)
-	}
-
-	errWriting := conn.WriteJSON(buf)
-
-	if errWriting != nil {
-		log.Println("Error sending the JSON:", err)
-	}
+func createVehicleState() VehicleState { //TODO
+	VehicleState := &VehicleState{}
+	VehicleState.XDistance = float64(rand.Intn(12) + 10.0)
+	VehicleState.XRotation = 0
+	return *VehicleState
 }
 
 func sendingPerturbationData(conn *websocket.Conn) {
@@ -115,16 +108,10 @@ func sendingPerturbationData(conn *websocket.Conn) {
 	go func() {
 		for range ticker.C {
 			perturbationData := createPerturbationData()
-			buf, err := json.Marshal(perturbationData)
-
-			if err != nil {
-				log.Println("Error marshalling the JSON:", err)
-			}
-
-			errWriting := conn.WriteJSON(buf)
+			errWriting := conn.WriteJSON(perturbationData)
 
 			if errWriting != nil {
-				log.Println("Error sending the JSON:", err)
+				log.Println("Error sending the JSON:", errWriting)
 			}
 		}
 	}()
