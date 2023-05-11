@@ -1,0 +1,45 @@
+package utilities
+
+import "math/rand"
+
+type Perturbation struct {
+	TypeP string
+	Value int
+}
+
+func createPerturbationData() Perturbation {
+	perturbationData := &Perturbation{}
+	perturbationData.TypeP = selectPerturbationType()
+	perturbationData.Value = rand.Intn(10)
+
+	return *perturbationData
+}
+
+func selectPerturbationType() string {
+	perturbationType := rand.Intn(3)
+	switch {
+	case perturbationType == 0:
+		return "x-axis"
+	case perturbationType == 1:
+		return "y-axis"
+	case perturbationType == 2:
+		return "z-axis"
+	default:
+		return ""
+	}
+}
+
+func sendingPerturbationData(conn *websocket.Conn) {
+	ticker := time.NewTicker(time.Second * 2)
+
+	go func() {
+		for range ticker.C {
+			perturbationData := createPerturbationData()
+			errWriting := conn.WriteJSON(perturbationData)
+
+			if errWriting != nil {
+				log.Println("Error sending the JSON:", errWriting)
+			}
+		}
+	}()
+}

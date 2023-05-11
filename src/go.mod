@@ -1,4 +1,4 @@
-module test-control-backend
+module main
 
 go 1.19
 
