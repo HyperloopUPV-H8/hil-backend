@@ -11,7 +11,9 @@ type VehicleState struct {
 
 func CreateVehicleState() VehicleState { //TODO
 	VehicleState := &VehicleState{}
-	VehicleState.XDistance = float64(rand.Intn(12) + 10.0)
-	//VehicleState.XRotation = 0
+	VehicleState.XDistance = float64(rand.Intn(12) + 10)
+	VehicleState.Current = float64(rand.Intn(20))
+	VehicleState.Duty = byte(rand.Intn(100))
+	VehicleState.Temperature = float64(rand.Intn(40) + 20)
 	return *VehicleState
 }

@@ -53,6 +53,27 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(vehicleState)
 
+	sendingVehicleStateJSON(conn)
+
+}
+
+func testVehicleStateToJSON() {
+	vehicleState := utilities.CreateVehicleState()
+
+	fmt.Println(vehicleState)
+
+	vehicleStateJson, _ := json.Marshal(vehicleState)
+
+	fmt.Println(vehicleStateJson)
+	fmt.Println(string(vehicleStateJson))
+
+	vehicleStateUnmarshalled := &utilities.VehicleState{}
+	json.Unmarshal(vehicleStateJson, vehicleStateUnmarshalled)
+
+	fmt.Println(vehicleStateUnmarshalled)
+}
+
+func sendingVehicleStateJSON(conn *websocket.Conn) {
 	ticker := time.NewTicker(1 * time.Second)
 	quit := make(chan struct{})
 	go func() {
@@ -74,21 +95,13 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
-
 }
 
-func testVehicleStateToJSON() {
-	vehicleState := utilities.CreateVehicleState()
-
-	fmt.Println(vehicleState)
-
-	vehicleStateJson, _ := json.Marshal(vehicleState)
-
-	fmt.Println(vehicleStateJson)
-	fmt.Println(string(vehicleStateJson))
-
-	vehicleStateUnmarshalled := &utilities.VehicleState{}
-	json.Unmarshal(vehicleStateJson, vehicleStateUnmarshalled)
-
-	fmt.Println(vehicleStateUnmarshalled)
+func receivingPerturbationData(conn *websocket.Conn) {
+	go func() {
+		for {
+			perturbationData := &utilities.Perturbation{}
+			conn.ReadJSON(perturbationData)
+		}
+	}()
 }

@@ -1,21 +1,27 @@
 package utilities
 
-import "math/rand"
+import (
+	"log"
+	"math/rand"
+	"time"
+
+	"github.com/gorilla/websocket"
+)
 
 type Perturbation struct {
 	TypeP string
 	Value int
 }
 
-func createPerturbationData() Perturbation {
+func CreatePerturbationData() Perturbation {
 	perturbationData := &Perturbation{}
-	perturbationData.TypeP = selectPerturbationType()
+	perturbationData.TypeP = SelectPerturbationType()
 	perturbationData.Value = rand.Intn(10)
 
 	return *perturbationData
 }
 
-func selectPerturbationType() string {
+func SelectPerturbationType() string {
 	perturbationType := rand.Intn(3)
 	switch {
 	case perturbationType == 0:
@@ -29,12 +35,12 @@ func selectPerturbationType() string {
 	}
 }
 
-func sendingPerturbationData(conn *websocket.Conn) {
+func SendingPerturbationData(conn *websocket.Conn) {
 	ticker := time.NewTicker(time.Second * 2)
 
 	go func() {
 		for range ticker.C {
-			perturbationData := createPerturbationData()
+			perturbationData := CreatePerturbationData()
 			errWriting := conn.WriteJSON(perturbationData)
 
 			if errWriting != nil {

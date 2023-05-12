@@ -3,7 +3,6 @@ package utilities
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"math"
 )
 
@@ -11,7 +10,6 @@ func GetVehicleState(data []byte) VehicleState {
 	reader := bytes.NewReader(data)
 	vehicleState := &VehicleState{}
 	binary.Read(reader, binary.LittleEndian, vehicleState)
-	fmt.Println(vehicleState)
 	return *vehicleState
 }
 
