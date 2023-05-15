@@ -25,33 +25,30 @@ func main() {
 		fmt.Println("Error al cargar archivo .env")
 	}
 
-	num := utilities.ConvertFloat64ToBytes(3.14)
-	fmt.Println(num)
-	fmt.Println(utilities.ConvertBytesToFloat64(num))
-
-	mockBytes := utilities.CreateMockBytes()
-	utilities.GetVehicleState(mockBytes[:])
+	// mockBytes := utilities.CreateMockBytes()
+	// utilities.GetVehicleState(mockBytes[:])
 
 	http.HandleFunc(os.Getenv("PATH"), handleWebSocket)
 
 	fmt.Println("Listening in", os.Getenv("SERVER_ADDR"))
-	// Iniciar el servidor HTTP en el puerto 8010
+
 	log.Fatal(http.ListenAndServe(os.Getenv("SERVER_ADDR"), nil))
 
 }
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
+	upgrader.CheckOrigin = func(r *http.Request) bool {
+		//origin := r.Header.Get("Origin")
+		//return origin == "http://127.0.0.1:5173/" || origin == "http://10.236.42.103:5173/"
+		return true
+	} //TODO: Check it the origin is correct
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Error upgrading connection:", err)
 		return
 	}
-	defer conn.Close()
-
-	vehicleState := utilities.CreateVehicleState()
-
-	fmt.Println(vehicleState)
 
 	sendingVehicleStateJSON(conn)
 
@@ -75,33 +72,33 @@ func testVehicleStateToJSON() {
 
 func sendingVehicleStateJSON(conn *websocket.Conn) {
 	ticker := time.NewTicker(1 * time.Second)
-	quit := make(chan struct{})
 	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				vehicleState := utilities.CreateVehicleState()
-				errMarshal := conn.WriteJSON(vehicleState)
+		for range ticker.C {
+			vehicleState := utilities.CreateVehicleState()
 
-				if errMarshal != nil {
-					log.Println("Error marshalling:", errMarshal)
-					return
-				}
+			errMarshal := conn.WriteJSON(vehicleState)
 
-				fmt.Println("struct sent!", vehicleState)
-			case <-quit:
-				ticker.Stop()
+			if errMarshal != nil {
+				log.Println("Error marshalling:", errMarshal)
 				return
 			}
+
+			fmt.Println("struct sent!", vehicleState)
 		}
 	}()
 }
 
 func receivingPerturbationData(conn *websocket.Conn) {
-	go func() {
-		for {
-			perturbationData := &utilities.Perturbation{}
-			conn.ReadJSON(perturbationData)
-		}
-	}()
+	for {
+		perturbationData := &utilities.PerturbationArray{}
+		conn.ReadJSON(perturbationData)
+	}
+}
+
+func createCloseHandler() (func(), <-chan bool) {
+	done := make(chan bool)
+
+	return func() {
+		done <- true
+	}, done
 }

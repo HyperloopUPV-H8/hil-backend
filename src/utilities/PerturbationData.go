@@ -13,6 +13,8 @@ type Perturbation struct {
 	Value int
 }
 
+type PerturbationArray []Perturbation
+
 func CreatePerturbationData() Perturbation {
 	perturbationData := &Perturbation{}
 	perturbationData.TypeP = SelectPerturbationType()

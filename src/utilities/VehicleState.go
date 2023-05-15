@@ -9,9 +9,9 @@ type VehicleState struct {
 	Temperature float64 `json:"temperature"`
 }
 
-func CreateVehicleState() VehicleState { //TODO
+func CreateVehicleState() VehicleState {
 	VehicleState := &VehicleState{}
-	VehicleState.XDistance = float64(rand.Intn(12) + 10)
+	VehicleState.XDistance = float64(rand.Intn(13) + 10)
 	VehicleState.Current = float64(rand.Intn(20))
 	VehicleState.Duty = byte(rand.Intn(100))
 	VehicleState.Temperature = float64(rand.Intn(40) + 20)
