@@ -8,14 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type Perturbation struct {
-	TypeP string
-	Value int
-}
-
-type PerturbationArray []Perturbation
-
-func CreatePerturbationData() Perturbation {
+func RandomPerturbationData() Perturbation {
 	perturbationData := &Perturbation{}
 	perturbationData.TypeP = SelectPerturbationType()
 	perturbationData.Value = rand.Intn(10)
@@ -42,7 +35,7 @@ func SendingPerturbationData(conn *websocket.Conn) {
 
 	go func() {
 		for range ticker.C {
-			perturbationData := CreatePerturbationData()
+			perturbationData := RandomPerturbationData()
 			errWriting := conn.WriteJSON(perturbationData)
 
 			if errWriting != nil {

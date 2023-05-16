@@ -25,9 +25,6 @@ func main() {
 		fmt.Println("Error al cargar archivo .env")
 	}
 
-	// mockBytes := utilities.CreateMockBytes()
-	// utilities.GetVehicleState(mockBytes[:])
-
 	http.HandleFunc(os.Getenv("PATH"), handleWebSocket)
 
 	fmt.Println("Listening in", os.Getenv("SERVER_ADDR"))
@@ -39,10 +36,11 @@ func main() {
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	upgrader.CheckOrigin = func(r *http.Request) bool {
+		//TODO: Check it the origin is correct
 		//origin := r.Header.Get("Origin")
 		//return origin == "http://127.0.0.1:5173/" || origin == "http://10.236.42.103:5173/"
 		return true
-	} //TODO: Check it the origin is correct
+	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -51,30 +49,16 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendingVehicleStateJSON(conn)
+	receivingStringMessage(conn)
 
-}
-
-func testVehicleStateToJSON() {
-	vehicleState := utilities.CreateVehicleState()
-
-	fmt.Println(vehicleState)
-
-	vehicleStateJson, _ := json.Marshal(vehicleState)
-
-	fmt.Println(vehicleStateJson)
-	fmt.Println(string(vehicleStateJson))
-
-	vehicleStateUnmarshalled := &utilities.VehicleState{}
-	json.Unmarshal(vehicleStateJson, vehicleStateUnmarshalled)
-
-	fmt.Println(vehicleStateUnmarshalled)
 }
 
 func sendingVehicleStateJSON(conn *websocket.Conn) {
 	ticker := time.NewTicker(1 * time.Second)
 	go func() {
 		for range ticker.C {
-			vehicleState := utilities.CreateVehicleState()
+			//TODO: Define msg origin, now it is a mock
+			vehicleState := utilities.RandomVehicleState()
 
 			errMarshal := conn.WriteJSON(vehicleState)
 
@@ -89,10 +73,47 @@ func sendingVehicleStateJSON(conn *websocket.Conn) {
 }
 
 func receivingPerturbationData(conn *websocket.Conn) {
-	for {
-		perturbationData := &utilities.PerturbationArray{}
-		conn.ReadJSON(perturbationData)
-	}
+	go func() {
+		fmt.Println("Init receiving")
+		for {
+			//TODO: Define struct which it's gonna be received
+			perturbationData := &utilities.PerturbationArray{}
+			err := conn.ReadJSON(perturbationData)
+			if err != nil {
+				fmt.Println("Failed")
+			}
+			//TODO: What to do with the formData received
+		}
+	}()
+}
+
+func receivingStringMessage(conn *websocket.Conn) {
+	go func() {
+		fmt.Println("Init receiving")
+		for {
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				fmt.Println("Failed")
+			}
+			fmt.Println(string(msg[:]))
+		}
+	}()
+}
+
+func testVehicleStateToJSON() {
+	vehicleState := utilities.RandomVehicleState()
+
+	fmt.Println(vehicleState)
+
+	vehicleStateJson, _ := json.Marshal(vehicleState)
+
+	fmt.Println(vehicleStateJson)
+	fmt.Println(string(vehicleStateJson))
+
+	vehicleStateUnmarshalled := &utilities.VehicleState{}
+	json.Unmarshal(vehicleStateJson, vehicleStateUnmarshalled)
+
+	fmt.Println(vehicleStateUnmarshalled)
 }
 
 func createCloseHandler() (func(), <-chan bool) {
