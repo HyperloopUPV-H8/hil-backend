@@ -54,7 +54,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendingVehicleStateJSON(conn *websocket.Conn) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	go func() {
 		for range ticker.C {
 			//TODO: Define msg origin, now it is a mock

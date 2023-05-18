@@ -26,7 +26,7 @@ func ConvertBytesToFloat64(bytes [8]byte) float64 {
 
 func CreateMockBytes(vehicleState VehicleState) [25]byte {
 
-	buf1 := ConvertFloat64ToBytes(vehicleState.XDistance)
+	buf1 := ConvertFloat64ToBytes(vehicleState.YDistance)
 	buf2 := ConvertFloat64ToBytes(vehicleState.Current)
 	var buf3 [1]byte = [1]byte{vehicleState.Duty}
 	buf4 := ConvertFloat64ToBytes(vehicleState.Temperature)
