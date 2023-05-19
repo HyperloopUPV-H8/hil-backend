@@ -1,4 +1,4 @@
-package utilities
+package main
 
 import (
 	"bytes"
@@ -19,12 +19,7 @@ func ConvertFloat64ToBytes(num float64) [8]byte {
 	return buf
 }
 
-func ConvertBytesToFloat64(bytes [8]byte) float64 {
-	num := math.Float64frombits(binary.LittleEndian.Uint64(bytes[:]))
-	return num
-}
-
-func CreateVehicleStateFromBytes(vehicleState VehicleState) [25]byte {
+func CreateVehicleStateFromBytes(vehicleState VehicleState) []byte {
 
 	buf1 := ConvertFloat64ToBytes(vehicleState.YDistance)
 	buf2 := ConvertFloat64ToBytes(vehicleState.Current)
@@ -33,13 +28,5 @@ func CreateVehicleStateFromBytes(vehicleState VehicleState) [25]byte {
 
 	result := append(append(append(buf1[:], buf2[:]...), buf3[:]...), buf4[:]...)
 
-	var mockBytes [25]byte
-	copy(mockBytes[:], result)
-	return mockBytes
-}
-
-func TestGetVehicleState(vehicleState VehicleState) VehicleState {
-	bytes := CreateVehicleStateFromBytes(vehicleState)
-	return GetVehicleState(bytes[:])
-
+	return result
 }

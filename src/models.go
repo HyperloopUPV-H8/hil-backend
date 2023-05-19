@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-
-	"github.com/gorilla/websocket"
 )
 
 type VehicleState struct {
@@ -17,18 +15,6 @@ type Perturbation struct {
 	Id    string `json:"id"`
 	TypeP string `json:"type"`
 	Value int    `json:"value"`
-}
-
-type HilHandler struct {
-	frontConn *websocket.Conn
-	hilConn   *websocket.Conn
-
-	parser HilParser // Tiene Encode y Decode
-}
-
-type HilParser struct {
-	Encode func(any) []byte
-	Decode func([]byte) any
 }
 
 // type SimulationData struct {

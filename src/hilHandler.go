@@ -9,6 +9,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type HilHandler struct {
+	frontConn *websocket.Conn
+	hilConn   *websocket.Conn
+
+	parser HilParser // Tiene Encode y Decode
+}
+
 func NewHilHandler() *HilHandler {
 	return &HilHandler{}
 }
@@ -47,12 +54,12 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	errChan := make(chan error)
 	done := make(chan struct{})
 	dataChan := make(chan VehicleState)
-	//orderChan := make(chan Order)
+	orderChan := make(chan Order)
 	// Recibo info del HIL y la envio al front
 	go hilHandler.startSendingData(dataChan, errChan, done)
 
 	// Recibo ordenes del front y la envio al HIL
-	//go hilHandler.startTransmittingOrders(orderChan, errChan, done)
+	go hilHandler.startTransmittingOrders(orderChan, errChan, done)
 
 	err := <-errChan
 	//Aquí se bloquea si llega error?
@@ -96,8 +103,27 @@ func (hilHandler *HilHandler) startSendingData(dataChan <-chan VehicleState, err
 	}()
 }
 
-// func (hilHandler *HilHandler) startTransmittingOrders(dataChan <-chan VehicleState, errChan <-chan error, done <-chan struct{}) {
-// }
+func (hilHandler *HilHandler) startTransmittingOrders(orderChan <-chan Order, errChan <-chan error, done <-chan struct{}) {
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			// case order := <-orderChan: //TODO: Define msg origin, now it is a mock
+			// 	//Encode
+			// 	errMarshal := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, order)
+			// 	if errMarshal != nil {
+			// 		log.Println("Error marshalling:", errMarshal)
+			// 		return
+			// 	}
+
+			default:
+
+			}
+
+		}
+	}()
+}
 
 // func (hilHandler *HilHandler) startTransmittingData(dataChan chan<- SimulationData, errChan chan<- error, done <-chan struct{}) {
 //     for {
