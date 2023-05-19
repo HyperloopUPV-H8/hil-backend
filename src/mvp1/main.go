@@ -48,12 +48,12 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendingVehicleStateJSON(conn)
+	SendingVehicleStateJSON(conn)
 	receivingStringMessage(conn)
 
 }
 
-func sendingVehicleStateJSON(conn *websocket.Conn) {
+func SendingVehicleStateJSON(conn *websocket.Conn) {
 	ticker := time.NewTicker(2 * time.Second)
 	go func() {
 		for range ticker.C {

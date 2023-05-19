@@ -49,7 +49,6 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	}
 	if remoteHost == "127.0.0.1" { //TODO: Establish IP
 		hilHandler.SetFrontConn(conn)
-		fmt.Println(hilHandler, r.RemoteAddr)
 	}
 
 	if remoteHost == "127.0.0.1" { //TODO: Establish IP from Hil
@@ -57,11 +56,17 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(hilHandler, r.RemoteAddr, conn.RemoteAddr())
 	}
 
-	if hilHandler.frontConn != nil || hilHandler.hilConn != nil {
-		errReady := hilHandler.frontConn.WriteMessage(0, []byte("Back-end is ready!"))
+	if hilHandler.frontConn != nil && hilHandler.hilConn != nil {
+		//byteArray := []byte{97, 98, 99, 100, 101, 102}
+		//var msg []byte = []byte[11111,11]
+		//[]byte("Back-end is ready!")
+
+		errReady := hilHandler.frontConn.WriteMessage(websocket.TextMessage, []byte("Back-end is ready!"))
 		if errReady != nil {
 			log.Println("Error sending ready message:", errReady)
 			return
 		}
+		hilHandler.StartIDLE()
+		//mvp1.SendingVehicleStateJSON(conn)
 	}
 }

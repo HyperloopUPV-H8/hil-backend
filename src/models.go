@@ -23,13 +23,18 @@ type HilHandler struct {
 	frontConn *websocket.Conn
 	hilConn   *websocket.Conn
 
-	//parser HilParser // Tiene Encode y Decode
+	parser HilParser // Tiene Encode y Decode
 }
 
-type SimulationData struct {
-	Current  float64
-	Distance float64
+type HilParser struct {
+	Encode func(any) []byte
+	Decode func([]byte) any
 }
+
+// type SimulationData struct {
+// 	Current  float64
+// 	Distance float64
+// }
 
 type FrontOrder struct {
 	kind    string
