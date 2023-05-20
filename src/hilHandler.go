@@ -32,7 +32,7 @@ func (hilHandler *HilHandler) StartIDLE() {
 	for {
 		_, msgByte, err := hilHandler.frontConn.ReadMessage()
 		if err != nil {
-			log.Fatalf("error receiving message in IDLE: ", err)
+			log.Fatalf("error receiving message in IDLE: %s", err)
 		}
 		msg := string(msgByte)
 		fmt.Println(msg)
@@ -57,10 +57,12 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	orderChan := make(chan Order)
 	// Recibo info del HIL y la envio al front
 	go hilHandler.startSendingData(dataChan, errChan, done)
+	//FIXME: Is it necesary to put go an inside the go func?
 
 	// Recibo ordenes del front y la envio al HIL
 	go hilHandler.startTransmittingOrders(orderChan, errChan, done)
 
+	//FIXME: Is it waiting for both? Or only for error?
 	err := <-errChan
 	//Aquí se bloquea si llega error?
 	done <- struct{}{}
@@ -74,6 +76,8 @@ func (hilHandler *HilHandler) startSendingData(dataChan <-chan VehicleState, err
 		for {
 			select {
 			case <-done:
+				return
+			case <-errChan: //FIXME
 				return
 			case data := <-dataChan: //TODO: Define msg origin, now it is a mock
 				errMarshal := hilHandler.frontConn.WriteJSON(data)
@@ -109,6 +113,8 @@ func (hilHandler *HilHandler) startTransmittingOrders(orderChan <-chan Order, er
 			select {
 			case <-done:
 				return
+			case <-errChan: //FIXME
+				return
 			// case order := <-orderChan: //TODO: Define msg origin, now it is a mock
 			// 	//Encode
 			// 	errMarshal := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, order)
@@ -125,25 +131,29 @@ func (hilHandler *HilHandler) startTransmittingOrders(orderChan <-chan Order, er
 	}()
 }
 
-// func (hilHandler *HilHandler) startTransmittingData(dataChan chan<- SimulationData, errChan chan<- error, done <-chan struct{}) {
-//     for {
-//         select {
-//         case <-done:
-//             break
-//         default:
-//             buf, err := hilHandler.hilConn.Read()
-//             if err != nil {
-//                 errChan<-err
-//                 break
-//             }
+func (hilHandler *HilHandler) startTransmittingData(dataChan chan<- VehicleState, errChan chan<- error, done <-chan struct{}) {
+	for {
+		select {
+		case <-done:
+			break
+		default:
+			_, buf, err := hilHandler.hilConn.ReadMessage()
+			if err != nil {
+				errChan <- err
+				break
+			}
+			data, errDecoding := Decode(buf) //TODO: Decode
+			if errDecoding != nil {
+				fmt.Println("Error decoding: ", errDecoding)
+				continue
+			}
+			var decodedData []VehicleState = data.([]VehicleState) //FIXME: Change depends on type
 
-//             data, err := hilHandler.parser.Decode(buf)
-//             if err != nil {
-//                 continue
-//             }
+			for _, d := range decodedData {
+				dataChan <- d
+			}
 
-//             dataChan <- data
-//         }
+		}
 
-//     }
-// }
+	}
+}

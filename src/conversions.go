@@ -6,11 +6,28 @@ import (
 	"math"
 )
 
+const VEHICLE_STATE_LENGTH = 25
+
 func GetVehicleState(data []byte) VehicleState {
 	reader := bytes.NewReader(data)
 	vehicleState := &VehicleState{}
 	binary.Read(reader, binary.LittleEndian, vehicleState)
 	return *vehicleState
+}
+
+func GetAllVehicleStates(data []byte) ([]VehicleState, error) {
+	vehicleStateArray := []VehicleState{}
+	reader := bytes.NewReader(data)
+	var err error
+	for i := 0; i <= len(data)-VEHICLE_STATE_LENGTH; i += VEHICLE_STATE_LENGTH {
+		vehicleState := &VehicleState{}
+		err = binary.Read(reader, binary.LittleEndian, vehicleState)
+		if err != nil {
+			break
+		}
+		vehicleStateArray = append(vehicleStateArray, *vehicleState)
+	}
+	return vehicleStateArray, err
 }
 
 func ConvertFloat64ToBytes(num float64) [8]byte {
@@ -19,7 +36,7 @@ func ConvertFloat64ToBytes(num float64) [8]byte {
 	return buf
 }
 
-func CreateVehicleStateFromBytes(vehicleState VehicleState) []byte {
+func CreateBytesFromVehicleState(vehicleState VehicleState) []byte {
 
 	buf1 := ConvertFloat64ToBytes(vehicleState.YDistance)
 	buf2 := ConvertFloat64ToBytes(vehicleState.Current)
