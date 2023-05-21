@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -21,21 +19,20 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func RandomVehicleState() VehicleState {
-	VehicleState := &VehicleState{}
-	VehicleState.YDistance = float64(rand.Intn(13)+10) + (math.Round(rand.Float64()*100) / 100)
-	VehicleState.Current = float64(rand.Intn(20)) + (math.Round(rand.Float64()*100) / 100)
-	VehicleState.Duty = byte(rand.Intn(100))
-	VehicleState.Temperature = float64(rand.Intn(40)+20) + (math.Round(rand.Float64()*100) / 100)
-	return *VehicleState
-}
-
 func main() {
-	// random := RandomVehicleState()
-	// fmt.Println(CreateBytesFromVehicleState(random))
 	// var dataVehicle []byte = []byte{154, 153, 153, 153, 153, 153, 3, 64, 51, 51, 51, 51, 51, 51, 17, 64, 1, 102, 102, 102, 102, 102, 102, 36, 64, 113, 61, 10, 215, 163, 240, 52, 64, 195, 245, 40, 92, 143, 194, 29, 64, 81, 41, 92, 143, 194, 245, 8, 77, 64, 154, 153, 153, 153, 153, 153, 3, 64, 51, 51, 51, 51, 51, 51, 17, 64, 1, 102, 102, 102, 102, 102, 102, 36, 64, 11, 11, 11}
-	// vehicle, _ := GetAllVehicleStates(dataVehicle)
-	// fmt.Println(vehicle)
+
+	// result, err := Decode1(dataVehicle)
+	// if err != nil {
+	// 	fmt.Println("Error")
+	// }
+
+	// switch obj := result.(type) {
+	// case []VehicleState:
+	// 	fmt.Println("VehicleState", obj)
+	// default:
+	// 	fmt.Println("Don't know", obj)
+	// }
 
 	err := godotenv.Load()
 	if err != nil {
@@ -64,7 +61,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error spliting IP:", errSplit)
 		return
 	}
-	if remoteHost == "127.0.0.1" { //TODO: Establish IP
+	if remoteHost == "10.236.45.250" { //TODO: Establish IP
 		hilHandler.SetFrontConn(conn)
 	}
 

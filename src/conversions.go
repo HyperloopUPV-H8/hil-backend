@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math"
+	"strconv"
 )
 
 const VEHICLE_STATE_LENGTH = 25
@@ -43,7 +44,25 @@ func CreateBytesFromVehicleState(vehicleState VehicleState) []byte {
 	var buf3 [1]byte = [1]byte{vehicleState.Duty}
 	buf4 := ConvertFloat64ToBytes(vehicleState.Temperature)
 
-	result := append(append(append(buf1[:], buf2[:]...), buf3[:]...), buf4[:]...)
+	return append(append(append(buf1[:], buf2[:]...), buf3[:]...), buf4[:]...)
+}
 
-	return result
+func (order ControlOrder) Bytes() []byte { //TODO: Add prefix
+	buf1 := []byte(order.Variable)
+	return strconv.AppendBool(buf1, order.State)
+}
+
+func (order ControlOrder) Read(data []byte) { //TODO: Add prefix
+	reader := bytes.NewReader(data)
+	binary.Read(reader, binary.LittleEndian, order)
+}
+
+func (order FrontOrder) Bytes() []byte { //TODO: Add prefix
+	buf1 := []byte(order.kind)
+	return append(buf1, order.payload...)
+}
+
+func (order FrontOrder) Read(data []byte) { //TODO: Add prefix
+	reader := bytes.NewReader(data)
+	binary.Read(reader, binary.LittleEndian, order)
 }

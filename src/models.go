@@ -1,9 +1,5 @@
 package main
 
-import (
-	"encoding/json"
-)
-
 type VehicleState struct {
 	YDistance   float64 `json:"yDistance"` //It goes between 22mm and 10 mm
 	Current     float64 `json:"current"`
@@ -24,7 +20,7 @@ type Perturbation struct {
 
 type FrontOrder struct {
 	kind    string
-	payload json.RawMessage
+	payload []byte
 }
 
 type ControlOrder struct {
@@ -36,4 +32,5 @@ type PerturbationOrder []Perturbation
 
 type Order interface {
 	Bytes() []byte
+	Read([]byte)
 }

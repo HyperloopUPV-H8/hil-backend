@@ -13,7 +13,7 @@ type HilHandler struct {
 	frontConn *websocket.Conn
 	hilConn   *websocket.Conn
 
-	parser HilParser // Tiene Encode y Decode
+	//parser HilParser // Tiene Encode y Decode
 }
 
 func NewHilHandler() *HilHandler {
@@ -44,9 +44,6 @@ func (hilHandler *HilHandler) StartIDLE() {
 				return
 			}
 		}
-
-		//fmt.Println("Llega a fin del IDLE") No llega porque readMessage deja bloqueado
-
 	}
 }
 
@@ -55,12 +52,16 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	done := make(chan struct{})
 	dataChan := make(chan VehicleState)
 	orderChan := make(chan Order)
-	// Recibo info del HIL y la envio al front
-	go hilHandler.startSendingData(dataChan, errChan, done)
+
+	hilHandler.startTransmittingData(dataChan, errChan, done)
+	// From HIL to front
+	hilHandler.startSendingData(dataChan, errChan, done)
 	//FIXME: Is it necesary to put go an inside the go func?
 
-	// Recibo ordenes del front y la envio al HIL
-	go hilHandler.startTransmittingOrders(orderChan, errChan, done)
+	// From front to HIL
+	hilHandler.startTransmittingOrders(orderChan, errChan, done)
+
+	hilHandler.startSendingOrders(orderChan, errChan, done)
 
 	//FIXME: Is it waiting for both? Or only for error?
 	err := <-errChan
@@ -71,8 +72,8 @@ func (hilHandler *HilHandler) startSimulationState() error {
 }
 
 func (hilHandler *HilHandler) startSendingData(dataChan <-chan VehicleState, errChan <-chan error, done <-chan struct{}) {
-	ticker := time.NewTicker(2 * time.Second)
 	go func() {
+		ticker := time.NewTicker(2 * time.Second)
 		for {
 			select {
 			case <-done:
@@ -115,13 +116,13 @@ func (hilHandler *HilHandler) startTransmittingOrders(orderChan <-chan Order, er
 				return
 			case <-errChan: //FIXME
 				return
-			// case order := <-orderChan: //TODO: Define msg origin, now it is a mock
-			// 	//Encode
-			// 	errMarshal := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, order)
-			// 	if errMarshal != nil {
-			// 		log.Println("Error marshalling:", errMarshal)
-			// 		return
-			// 	}
+			case order := <-orderChan: //TODO: Define msg origin, now it is a mock
+				encodedOrder := order.Bytes()
+				errMarshal := hilHandler.frontConn.WriteMessage(websocket.BinaryMessage, encodedOrder)
+				if errMarshal != nil {
+					log.Println("Error marshalling:", errMarshal)
+					return
+				}
 
 			default:
 
@@ -132,28 +133,60 @@ func (hilHandler *HilHandler) startTransmittingOrders(orderChan <-chan Order, er
 }
 
 func (hilHandler *HilHandler) startTransmittingData(dataChan chan<- VehicleState, errChan chan<- error, done <-chan struct{}) {
-	for {
-		select {
-		case <-done:
-			break
-		default:
-			_, buf, err := hilHandler.hilConn.ReadMessage()
-			if err != nil {
-				errChan <- err
+	go func() {
+		for {
+			select {
+			case <-done:
 				break
-			}
-			data, errDecoding := Decode(buf) //TODO: Decode
-			if errDecoding != nil {
-				fmt.Println("Error decoding: ", errDecoding)
-				continue
-			}
-			var decodedData []VehicleState = data.([]VehicleState) //FIXME: Change depends on type
+			default:
+				_, buf, err := hilHandler.hilConn.ReadMessage()
+				if err != nil {
+					errChan <- err
+					break
+				}
+				data, errDecoding := Decode(buf) //TODO: Decode
+				if errDecoding != nil {
+					fmt.Println("Error decoding: ", errDecoding)
+					continue
+				}
 
-			for _, d := range decodedData {
-				dataChan <- d
+				switch decodedData := data.(type) {
+				case []VehicleState:
+					for _, d := range decodedData {
+						dataChan <- d
+					}
+				default:
+					fmt.Println("Does NOT match any type: ", decodedData)
+				}
+
 			}
 
 		}
+	}()
+}
 
-	}
+func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan Order, errChan <-chan error, done <-chan struct{}) {
+	go func() {
+		ticker := time.NewTicker(2 * time.Second)
+		for {
+			select {
+			case <-done:
+				return
+			case <-errChan: //FIXME
+				return
+			case order := <-orderChan: //TODO: Choose where it is encode to []byte
+				errMarshal := hilHandler.hilConn.WriteJSON(order)
+				if errMarshal != nil {
+					log.Println("Error marshalling:", errMarshal)
+					return
+				}
+				fmt.Println("order sent!", order)
+			default:
+				for range ticker.C {
+					//TODO: Send orders to HIL
+				}
+			}
+
+		}
+	}()
 }
