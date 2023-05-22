@@ -37,7 +37,7 @@ func ConvertFloat64ToBytes(num float64) [8]byte {
 	return buf
 }
 
-func CreateBytesFromVehicleState(vehicleState VehicleState) []byte {
+func GetBytesFromVehicleState(vehicleState VehicleState) []byte {
 
 	buf1 := ConvertFloat64ToBytes(vehicleState.YDistance)
 	buf2 := ConvertFloat64ToBytes(vehicleState.Current)
@@ -47,7 +47,15 @@ func CreateBytesFromVehicleState(vehicleState VehicleState) []byte {
 	return append(append(append(buf1[:], buf2[:]...), buf3[:]...), buf4[:]...)
 }
 
-func (order ControlOrder) Bytes() []byte { //TODO: Add prefix
+func GetAllBytesFromVehiclesState(vehiclesState []VehicleState) []byte {
+	var result []byte
+	for _, vehicle := range vehiclesState {
+		result = append(result, GetBytesFromVehicleState(vehicle)...)
+	}
+	return result
+}
+
+func (order ControlOrder) Bytes() []byte {
 	buf1 := []byte(order.Variable)
 	return strconv.AppendBool(buf1, order.State)
 }
@@ -57,7 +65,7 @@ func (order ControlOrder) Read(data []byte) { //TODO: Add prefix
 	binary.Read(reader, binary.LittleEndian, order)
 }
 
-func (order FrontOrder) Bytes() []byte { //TODO: Add prefix
+func (order FrontOrder) Bytes() []byte {
 	buf1 := []byte(order.kind)
 	return append(buf1, order.payload...)
 }
@@ -65,4 +73,12 @@ func (order FrontOrder) Bytes() []byte { //TODO: Add prefix
 func (order FrontOrder) Read(data []byte) { //TODO: Add prefix
 	reader := bytes.NewReader(data)
 	binary.Read(reader, binary.LittleEndian, order)
+}
+
+func GetAllBytesFromOrder(data []Order) []byte {
+	var result []byte
+	for _, order := range data {
+		result = append(result, order.Bytes()...)
+	}
+	return result
 }

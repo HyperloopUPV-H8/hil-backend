@@ -24,7 +24,7 @@ func ConvertBytesToFloat64(bytes [8]byte) float64 {
 	return num
 }
 
-func CreateBytesFromVehicleState(vehicleState VehicleState) [25]byte {
+func GetBytesFromVehicleState(vehicleState VehicleState) [25]byte {
 
 	buf1 := ConvertFloat64ToBytes(vehicleState.YDistance)
 	buf2 := ConvertFloat64ToBytes(vehicleState.Current)
@@ -39,7 +39,7 @@ func CreateBytesFromVehicleState(vehicleState VehicleState) [25]byte {
 }
 
 func TestGetVehicleState(vehicleState VehicleState) VehicleState {
-	bytes := CreateBytesFromVehicleState(vehicleState)
+	bytes := GetBytesFromVehicleState(vehicleState)
 	return GetVehicleState(bytes[:])
 
 }

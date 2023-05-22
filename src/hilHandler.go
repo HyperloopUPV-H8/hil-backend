@@ -63,9 +63,8 @@ func (hilHandler *HilHandler) startSimulationState() error {
 
 	hilHandler.startSendingOrders(orderChan, errChan, done)
 
-	//FIXME: Is it waiting for both? Or only for error?
+	//FIXME: Waiting for error, and sending done to close the rest
 	err := <-errChan
-	//Aquí se bloquea si llega error?
 	done <- struct{}{}
 
 	return err
@@ -116,8 +115,9 @@ func (hilHandler *HilHandler) startTransmittingOrders(orderChan <-chan Order, er
 				return
 			case <-errChan: //FIXME
 				return
-			case order := <-orderChan: //TODO: Define msg origin, now it is a mock
-				encodedOrder := order.Bytes()
+			case order := <-orderChan:
+				var orderArray []Order = []Order{order} //TODO, it is gonna use arrays or only a order
+				encodedOrder := Encode(orderArray)
 				errMarshal := hilHandler.frontConn.WriteMessage(websocket.BinaryMessage, encodedOrder)
 				if errMarshal != nil {
 					log.Println("Error marshalling:", errMarshal)

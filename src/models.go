@@ -33,4 +33,5 @@ type PerturbationOrder []Perturbation
 type Order interface {
 	Bytes() []byte
 	Read([]byte)
+	//GetAllBytesFromOrder() []byte
 }

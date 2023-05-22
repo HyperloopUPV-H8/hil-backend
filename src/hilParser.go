@@ -6,6 +6,10 @@ import (
 	"fmt"
 )
 
+const VEHICLE_STATE_ID = 1
+const FRONT_ORDER_ID = 2
+const CONTROL_ORDER_ID = 3
+
 //type HilParser map[int]any
 
 // CreateHilParser() {
@@ -28,10 +32,18 @@ import (
 
 func Encode(data interface{}) []byte {
 	switch dataType := data.(type) {
-	case VehicleState:
-		return CreateBytesFromVehicleState(dataType) //TODO: add prefix of type of message
-	case Order: //FIXME: Is is necessary to diferenciate it? COntrolOrder and FrontOrder?
-		return dataType.Bytes() //TODO: add prefix of type of message
+	case []VehicleState:
+		head := make([]byte, 2)
+		binary.LittleEndian.PutUint16(head, VEHICLE_STATE_ID)
+		return Prepend(GetAllBytesFromVehiclesState(dataType), head...) //FIXME: Check prefix
+	case []FrontOrder: //TODO: Is is necessary to diferenciate it? ControlOrder and FrontOrder? Don't think so
+		head := make([]byte, 2)
+		binary.LittleEndian.PutUint16(head, FRONT_ORDER_ID)
+		return Prepend(GetAllBytesFromOrder(dataType), head...)
+	case []ControlOrder:
+		head := make([]byte, 2)
+		binary.LittleEndian.PutUint16(head, CONTROL_ORDER_ID)
+		return Prepend(GetAllBytesFromOrder(dataType), head...)
 	default:
 		fmt.Println("Does NOT match any type")
 		return nil
@@ -39,11 +51,16 @@ func Encode(data interface{}) []byte {
 }
 
 func Decode(data []byte) (any, error) { //FIXME: With a map choose the struct, define how to know it
+
 	dataType := binary.LittleEndian.Uint64(data[0:2]) //FIXME: Little Endian?
 	switch dataType {
-	case 1: //FIXME: Talk about types
+	case VEHICLE_STATE_ID: //FIXME: Talk about types
 		vehicleStates, err := GetAllVehicleStates(data[2:])
 		return vehicleStates, err
+	case FRONT_ORDER_ID: //TODO
+		return nil, nil
+	case CONTROL_ORDER_ID: //TODO
+		return nil, nil
 	default:
 		fmt.Println("Does NOT match any type")
 		return nil, errors.New("Does NOT match any type")
