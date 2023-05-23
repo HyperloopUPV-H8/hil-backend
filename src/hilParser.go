@@ -36,13 +36,18 @@ func Encode(data interface{}) []byte {
 		head := make([]byte, 2)
 		binary.LittleEndian.PutUint16(head, VEHICLE_STATE_ID)
 		return Prepend(GetAllBytesFromVehiclesState(dataType), head...) //FIXME: Check prefix
-	case []FrontOrder: //TODO: Is is necessary to diferenciate it? ControlOrder and FrontOrder? Don't think so
+	case []Order: //TODO: Is is necessary to diferenciate it? ControlOrder and FrontOrder? Don't think so
 		head := make([]byte, 2)
-		binary.LittleEndian.PutUint16(head, FRONT_ORDER_ID)
-		return Prepend(GetAllBytesFromOrder(dataType), head...)
-	case []ControlOrder:
-		head := make([]byte, 2)
-		binary.LittleEndian.PutUint16(head, CONTROL_ORDER_ID)
+		switch dataType[0].(type) { //FIXME, is it correct?
+		case FrontOrder:
+			binary.LittleEndian.PutUint16(head, FRONT_ORDER_ID)
+		case ControlOrder:
+			binary.LittleEndian.PutUint16(head, CONTROL_ORDER_ID)
+		default:
+			fmt.Println("Does NOT match any ORDER type")
+			return nil
+		}
+
 		return Prepend(GetAllBytesFromOrder(dataType), head...)
 	default:
 		fmt.Println("Does NOT match any type")

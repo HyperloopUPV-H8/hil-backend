@@ -41,7 +41,7 @@ func main() {
 
 	http.HandleFunc(os.Getenv("PATH"), handle)
 
-	fmt.Println("Listening in", os.Getenv("SERVER_ADDR"))
+	fmt.Println("Listening in", os.Getenv("SERVER_ADDR")+os.Getenv("PATH"))
 
 	log.Fatal(http.ListenAndServe(os.Getenv("SERVER_ADDR"), nil))
 
@@ -61,14 +61,18 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error spliting IP:", errSplit)
 		return
 	}
-	if remoteHost == "10.236.45.250" { //TODO: Establish IP
+
+	//for hilHandler.frontConn == nil || hilHandler.hilConn == nil { //FIXME: por cada nueva conexión se vuelve a ejecutar este código
+	if hilHandler.frontConn == nil && remoteHost == "10.236.45.250" { //TODO: Establish IP
 		hilHandler.SetFrontConn(conn)
 	}
 
-	if remoteHost == "127.0.0.1" { //TODO: Establish IP from Hil
+	if hilHandler.hilConn == nil && remoteHost == "127.0.0.1" { //TODO: Establish IP from Hil
+		fmt.Println(hilHandler.hilConn) //TODO: It becomes nil and change the connection
 		hilHandler.SetHilConn(conn)
-		fmt.Println(hilHandler, r.RemoteAddr, conn.RemoteAddr())
+		fmt.Println(hilHandler, hilHandler.hilConn, conn.RemoteAddr())
 	}
+	//}
 
 	if hilHandler.frontConn != nil && hilHandler.hilConn != nil {
 		errReady := hilHandler.frontConn.WriteMessage(websocket.TextMessage, []byte("Back-end is ready!"))

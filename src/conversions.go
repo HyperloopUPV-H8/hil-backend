@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math"
-	"strconv"
 )
 
 const VEHICLE_STATE_LENGTH = 25
@@ -53,26 +52,6 @@ func GetAllBytesFromVehiclesState(vehiclesState []VehicleState) []byte {
 		result = append(result, GetBytesFromVehicleState(vehicle)...)
 	}
 	return result
-}
-
-func (order ControlOrder) Bytes() []byte {
-	buf1 := []byte(order.Variable)
-	return strconv.AppendBool(buf1, order.State)
-}
-
-func (order ControlOrder) Read(data []byte) { //TODO: Add prefix
-	reader := bytes.NewReader(data)
-	binary.Read(reader, binary.LittleEndian, order)
-}
-
-func (order FrontOrder) Bytes() []byte {
-	buf1 := []byte(order.kind)
-	return append(buf1, order.payload...)
-}
-
-func (order FrontOrder) Read(data []byte) { //TODO: Add prefix
-	reader := bytes.NewReader(data)
-	binary.Read(reader, binary.LittleEndian, order)
 }
 
 func GetAllBytesFromOrder(data []Order) []byte {

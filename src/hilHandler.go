@@ -29,6 +29,7 @@ func (hilHandler *HilHandler) SetHilConn(conn *websocket.Conn) {
 }
 
 func (hilHandler *HilHandler) StartIDLE() {
+
 	for {
 		_, msgByte, err := hilHandler.frontConn.ReadMessage()
 		if err != nil {
@@ -53,13 +54,13 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	dataChan := make(chan VehicleState)
 	orderChan := make(chan Order)
 
-	hilHandler.startTransmittingData(dataChan, errChan, done)
+	hilHandler.startListeningData(dataChan, errChan, done)
 	// From HIL to front
 	hilHandler.startSendingData(dataChan, errChan, done)
 	//FIXME: Is it necesary to put go an inside the go func?
 
 	// From front to HIL
-	hilHandler.startTransmittingOrders(orderChan, errChan, done)
+	hilHandler.startListeningOrders(orderChan, errChan, done)
 
 	hilHandler.startSendingOrders(orderChan, errChan, done)
 
@@ -107,24 +108,24 @@ func (hilHandler *HilHandler) startSendingData(dataChan <-chan VehicleState, err
 	}()
 }
 
-func (hilHandler *HilHandler) startTransmittingOrders(orderChan <-chan Order, errChan <-chan error, done <-chan struct{}) {
+func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- Order, errChan chan<- error, done <-chan struct{}) {
 	go func() {
 		for {
 			select {
 			case <-done:
 				return
-			case <-errChan: //FIXME
+				//case <-errChan: //FIXME
 				return
-			case order := <-orderChan:
-				var orderArray []Order = []Order{order} //TODO, it is gonna use arrays or only a order
-				encodedOrder := Encode(orderArray)
-				errMarshal := hilHandler.frontConn.WriteMessage(websocket.BinaryMessage, encodedOrder)
-				if errMarshal != nil {
-					log.Println("Error marshalling:", errMarshal)
-					return
-				}
 
 			default:
+				var order Order
+				errReadJSON := hilHandler.frontConn.ReadJSON(order)
+				if errReadJSON != nil {
+					errChan <- errReadJSON
+					break
+				}
+				//data := Encode(order) //TODO: Encode, there are not error
+				orderChan <- order
 
 			}
 
@@ -132,12 +133,12 @@ func (hilHandler *HilHandler) startTransmittingOrders(orderChan <-chan Order, er
 	}()
 }
 
-func (hilHandler *HilHandler) startTransmittingData(dataChan chan<- VehicleState, errChan chan<- error, done <-chan struct{}) {
+func (hilHandler *HilHandler) startListeningData(dataChan chan<- VehicleState, errChan chan<- error, done <-chan struct{}) {
 	go func() {
 		for {
 			select {
 			case <-done:
-				break
+				return
 			default:
 				_, buf, err := hilHandler.hilConn.ReadMessage()
 				if err != nil {
@@ -174,13 +175,14 @@ func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan Order, errChan
 				return
 			case <-errChan: //FIXME
 				return
-			case order := <-orderChan: //TODO: Choose where it is encode to []byte
-				errMarshal := hilHandler.hilConn.WriteJSON(order)
+			case order := <-orderChan:
+				var orderArray []Order = []Order{order} //TODO, it is gonna use arrays or only a order
+				encodedOrder := Encode(orderArray)
+				errMarshal := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, encodedOrder)
 				if errMarshal != nil {
 					log.Println("Error marshalling:", errMarshal)
 					return
 				}
-				fmt.Println("order sent!", order)
 			default:
 				for range ticker.C {
 					//TODO: Send orders to HIL
