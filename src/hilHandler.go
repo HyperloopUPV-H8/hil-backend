@@ -29,7 +29,7 @@ func (hilHandler *HilHandler) SetHilConn(conn *websocket.Conn) {
 }
 
 func (hilHandler *HilHandler) StartIDLE() {
-
+	fmt.Println("IDLE")
 	for {
 		_, msgByte, err := hilHandler.frontConn.ReadMessage()
 		if err != nil {
@@ -38,7 +38,7 @@ func (hilHandler *HilHandler) StartIDLE() {
 		msg := string(msgByte)
 		fmt.Println(msg)
 		switch msg {
-		case "start_simulation":
+		case "start_simulation": //FIXME: Check in front when it sends the msg
 			err := hilHandler.startSimulationState()
 
 			if err != nil {
@@ -53,7 +53,7 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	done := make(chan struct{})
 	dataChan := make(chan VehicleState)
 	orderChan := make(chan Order)
-
+	fmt.Println("Simulation state")
 	hilHandler.startListeningData(dataChan, errChan, done)
 	// From HIL to front
 	hilHandler.startSendingData(dataChan, errChan, done)
@@ -157,7 +157,7 @@ func (hilHandler *HilHandler) startListeningData(dataChan chan<- VehicleState, e
 						dataChan <- d
 					}
 				default:
-					fmt.Println("Does NOT match any type: ", decodedData)
+					fmt.Println("Does NOT match any type (startListeningData): ", decodedData)
 				}
 
 			}

@@ -39,7 +39,8 @@ func main() {
 		fmt.Println("Error al cargar archivo .env")
 	}
 
-	http.HandleFunc(os.Getenv("PATH"), handle)
+	hilHandler := NewHilHandler()
+	http.HandleFunc(os.Getenv("PATH"), func(w http.ResponseWriter, r *http.Request) { handle(w, r, hilHandler) })
 
 	fmt.Println("Listening in", os.Getenv("SERVER_ADDR")+os.Getenv("PATH"))
 
@@ -47,10 +48,7 @@ func main() {
 
 }
 
-func handle(w http.ResponseWriter, r *http.Request) {
-
-	hilHandler := NewHilHandler()
-
+func handle(w http.ResponseWriter, r *http.Request, hilHandler *HilHandler) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Error upgrading connection:", err)
@@ -62,17 +60,15 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//for hilHandler.frontConn == nil || hilHandler.hilConn == nil { //FIXME: por cada nueva conexión se vuelve a ejecutar este código
-	if hilHandler.frontConn == nil && remoteHost == "10.236.45.250" { //TODO: Establish IP
+	if hilHandler.frontConn == nil && remoteHost == "127.0.0.1" { //TODO: Establish IP
 		hilHandler.SetFrontConn(conn)
+		fmt.Println(hilHandler, conn.RemoteAddr())
 	}
 
-	if hilHandler.hilConn == nil && remoteHost == "127.0.0.1" { //TODO: Establish IP from Hil
-		fmt.Println(hilHandler.hilConn) //TODO: It becomes nil and change the connection
+	if hilHandler.hilConn == nil && remoteHost == "127.0.0.2" { //TODO: Establish IP from Hil
 		hilHandler.SetHilConn(conn)
-		fmt.Println(hilHandler, hilHandler.hilConn, conn.RemoteAddr())
+		fmt.Println(hilHandler, conn.RemoteAddr())
 	}
-	//}
 
 	if hilHandler.frontConn != nil && hilHandler.hilConn != nil {
 		errReady := hilHandler.frontConn.WriteMessage(websocket.TextMessage, []byte("Back-end is ready!"))

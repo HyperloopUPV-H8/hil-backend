@@ -44,20 +44,21 @@ func Encode(data interface{}) []byte {
 		case ControlOrder:
 			binary.LittleEndian.PutUint16(head, CONTROL_ORDER_ID)
 		default:
-			fmt.Println("Does NOT match any ORDER type")
+			fmt.Println("Does NOT match any ORDER type (Encode)")
 			return nil
 		}
 
 		return Prepend(GetAllBytesFromOrder(dataType), head...)
 	default:
-		fmt.Println("Does NOT match any type")
+		fmt.Println("Does NOT match any type (Encode2)")
 		return nil
 	}
 }
 
 func Decode(data []byte) (any, error) { //FIXME: With a map choose the struct, define how to know it
 
-	dataType := binary.LittleEndian.Uint64(data[0:2]) //FIXME: Little Endian?
+	dataType := binary.LittleEndian.Uint16(data[0:2]) //FIXME: Little Endian?
+	fmt.Println("Datatype Decode: ", dataType)
 	switch dataType {
 	case VEHICLE_STATE_ID: //FIXME: Talk about types
 		vehicleStates, err := GetAllVehicleStates(data[2:])
@@ -67,7 +68,7 @@ func Decode(data []byte) (any, error) { //FIXME: With a map choose the struct, d
 	case CONTROL_ORDER_ID: //TODO
 		return nil, nil
 	default:
-		fmt.Println("Does NOT match any type")
+		fmt.Println("Does NOT match any type (decode)")
 		return nil, errors.New("Does NOT match any type")
 	}
 
