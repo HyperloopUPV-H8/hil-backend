@@ -33,13 +33,13 @@ type Order interface {
 }
 
 type FrontOrder struct {
-	kind    string
-	payload []byte
+	Kind    string `json:"kind"`
+	Payload []byte `json:"payload"`
 }
 
 func (order FrontOrder) Bytes() []byte {
-	buf1 := []byte(order.kind)
-	return append(buf1, order.payload...)
+	buf1 := []byte(order.Kind)
+	return append(buf1, order.Payload...)
 }
 
 func (order FrontOrder) Read(data []byte) { //TODO: Add prefix
@@ -48,8 +48,8 @@ func (order FrontOrder) Read(data []byte) { //TODO: Add prefix
 }
 
 type ControlOrder struct {
-	Variable string
-	State    bool
+	Variable string `json:"variable"`
+	State    bool   `json:"state"`
 }
 
 func (order ControlOrder) Bytes() []byte {

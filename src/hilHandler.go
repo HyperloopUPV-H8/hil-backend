@@ -54,14 +54,13 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	dataChan := make(chan VehicleState)
 	orderChan := make(chan Order)
 	fmt.Println("Simulation state")
+
+	//FIXME: IT WORKS PROPERLY
 	hilHandler.startListeningData(dataChan, errChan, done)
-	// From HIL to front
 	hilHandler.startSendingData(dataChan, errChan, done)
-	//FIXME: Is it necesary to put go an inside the go func?
 
 	// From front to HIL
 	hilHandler.startListeningOrders(orderChan, errChan, done)
-
 	hilHandler.startSendingOrders(orderChan, errChan, done)
 
 	//FIXME: Waiting for error, and sending done to close the rest
@@ -73,14 +72,15 @@ func (hilHandler *HilHandler) startSimulationState() error {
 
 func (hilHandler *HilHandler) startSendingData(dataChan <-chan VehicleState, errChan <-chan error, done <-chan struct{}) {
 	go func() {
-		ticker := time.NewTicker(2 * time.Second)
+
 		for {
 			select {
 			case <-done:
 				return
 			case <-errChan: //FIXME
 				return
-			case data := <-dataChan: //TODO: Define msg origin, now it is a mock
+			case data := <-dataChan:
+				fmt.Println(data.Current)
 				errMarshal := hilHandler.frontConn.WriteJSON(data)
 				if errMarshal != nil {
 					log.Println("Error marshalling:", errMarshal)
@@ -89,23 +89,27 @@ func (hilHandler *HilHandler) startSendingData(dataChan <-chan VehicleState, err
 
 				fmt.Println("struct sent!", data)
 			default:
-				for range ticker.C {
-					//FIXME: Only for mocking
-					vehicleState := utilities.RandomVehicleState()
-
-					errMarshal := hilHandler.frontConn.WriteJSON(vehicleState)
-
-					if errMarshal != nil {
-						log.Println("Error marshalling:", errMarshal)
-						return
-					}
-
-					fmt.Println("struct sent!", vehicleState)
-				}
 			}
 
 		}
 	}()
+}
+
+// Only for mocking and tests for func StartSendingData
+func (hilHandler *HilHandler) mockingSendVehicleState() {
+	ticker := time.NewTicker(2 * time.Second)
+	for range ticker.C {
+		vehicleState := utilities.RandomVehicleState()
+
+		errMarshal := hilHandler.frontConn.WriteJSON(vehicleState)
+
+		if errMarshal != nil {
+			log.Println("Error marshalling:", errMarshal)
+			return
+		}
+
+		fmt.Println("struct sent!", vehicleState)
+	}
 }
 
 func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- Order, errChan chan<- error, done <-chan struct{}) {
@@ -115,7 +119,7 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- Order, errCh
 			case <-done:
 				return
 				//case <-errChan: //FIXME
-				return
+				//return
 
 			default:
 				var order Order
@@ -124,7 +128,6 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- Order, errCh
 					errChan <- errReadJSON
 					break
 				}
-				//data := Encode(order) //TODO: Encode, there are not error
 				orderChan <- order
 
 			}
