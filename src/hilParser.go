@@ -58,15 +58,13 @@ func Encode(data interface{}) []byte {
 func Decode(data []byte) (any, error) { //FIXME: With a map choose the struct, define how to know it
 
 	dataType := binary.LittleEndian.Uint16(data[0:2]) //FIXME: Little Endian?
-	fmt.Println("Datatype Decode: ", dataType)
 	switch dataType {
 	case VEHICLE_STATE_ID: //FIXME: Talk about types
-		vehicleStates, err := GetAllVehicleStates(data[2:])
-		return vehicleStates, err
+		return GetAllVehicleStates(data[2:])
 	case FRONT_ORDER_ID: //TODO
 		return nil, nil
 	case CONTROL_ORDER_ID: //TODO
-		return nil, nil
+		return GetAllControlOrders(data[2:])
 	default:
 		fmt.Println("Does NOT match any type (decode)")
 		return nil, errors.New("Does NOT match any type")

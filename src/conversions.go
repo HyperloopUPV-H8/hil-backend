@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math"
 )
 
@@ -54,7 +55,32 @@ func GetAllBytesFromVehiclesState(vehiclesState []VehicleState) []byte {
 	return result
 }
 
+func GetAllControlOrders(data []byte) ([]ControlOrder, error) {
+	ordersArray := []ControlOrder{}
+	reader := bytes.NewReader(data)
+	var err error
+	for reader.Len() > 0 { //FIXME?
+		fmt.Println("Len", reader.Len())
+		order := &ControlOrder{}
+		err = binary.Read(reader, binary.LittleEndian, order) // TODO: There is an Error here
+		if err != nil {
+			fmt.Println("error decoding control orders: ", err)
+			break
+		}
+		ordersArray = append(ordersArray, *order)
+	}
+	return ordersArray, err
+}
+
 func GetAllBytesFromOrder(data []Order) []byte {
+	var result []byte
+	for _, order := range data {
+		result = append(result, order.Bytes()...)
+	}
+	return result
+}
+
+func GetAllBytesFromControlOrder(data []ControlOrder) []byte {
 	var result []byte
 	for _, order := range data {
 		result = append(result, order.Bytes()...)
