@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"main/mvp1/utilities"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -122,18 +124,42 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- Order, errCh
 				//return
 
 			default:
-				var order ControlOrder
-				//_, msg, errReadJSON := hilHandler.frontConn.ReadMessage()
-				//fmt.Println(msg)
-				errReadJSON := hilHandler.frontConn.ReadJSON(&order)
-				fmt.Println(order)
+				//var order ControlOrder
+				_, msg, errReadJSON := hilHandler.frontConn.ReadMessage()
+				stringMsg := string(msg)
 				if errReadJSON != nil {
 					//errChan <- errReadJSON
 					fmt.Println("err: ", errReadJSON)
 					break
 				}
-				orderChan <- order
-
+				//fmt.Println(stringMsg)
+				if strings.HasPrefix(stringMsg, "{\"variable\":") {
+					var order ControlOrder = ControlOrder{}
+					errJSON := json.Unmarshal(msg, &order)
+					if errJSON != nil {
+						//errChan <- errReadJSON
+						fmt.Println("err: ", errJSON)
+						break
+					}
+					orderChan <- order
+					fmt.Println(order)
+				} else if strings.HasPrefix(stringMsg, "[{\"id\":") {
+					var orders FormData = FormData{}
+					errJSON := json.Unmarshal(msg, &orders)
+					if errJSON != nil {
+						//errChan <- errReadJSON
+						fmt.Println("err: ", errReadJSON)
+						break
+					}
+					frontOrders := ConvertFormDataToOrders(orders)
+					for _, frontOrder := range frontOrders {
+						fmt.Println("orderChan: ", frontOrder)
+						orderChan <- frontOrder
+					}
+					fmt.Println(orders)
+				} else {
+					fmt.Println("Ii is not an order")
+				}
 			}
 
 		}

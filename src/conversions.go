@@ -87,3 +87,15 @@ func GetAllBytesFromControlOrder(data []ControlOrder) []byte {
 	}
 	return result
 }
+
+func ConvertFormDataToOrders(form FormData) []FrontOrder {
+	var frontOrders []FrontOrder
+	for _, order := range form {
+		if order.Enabled && order.Validity.IsValid { //TODO: Check type
+			frontOrder := FrontOrder{Kind: order.Id, Payload: order.Value}
+			fmt.Println(frontOrder)
+			frontOrders = append(frontOrders, frontOrder)
+		}
+	}
+	return frontOrders
+}
