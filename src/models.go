@@ -27,8 +27,7 @@ type PerturbationOrder []Perturbation
 
 type Order interface {
 	Bytes() []byte
-	Read([]byte)
-	//GetAllBytesFromOrder() []byte
+	//Read([]byte) TODO
 }
 
 type FrontOrder struct {
@@ -58,18 +57,20 @@ func (order FrontOrder) Bytes() []byte {
 	return append(buf1, buf2[:]...)
 }
 
-func (order FrontOrder) Read(data []byte) {
+func (order *FrontOrder) Read(data []byte) {
 	reader := bytes.NewReader(data)
 	binary.Read(reader, binary.LittleEndian, order)
 }
 
 type ControlOrder struct {
-	Variable string `json:"variable"`
-	State    bool   `json:"state"`
+	Id    uint8 `json:"id"`
+	State bool  `json:"state"`
 }
 
 func (order ControlOrder) Bytes() []byte {
-	buf1 := []byte(order.Variable)
+	//var buf1 [8]byte
+	//binary.LittleEndian.PutUint64(buf1[:], order.Id)
+	buf1 := []byte{order.Id}
 	var booleanValue uint8
 	if order.State {
 		booleanValue = 1
@@ -79,7 +80,7 @@ func (order ControlOrder) Bytes() []byte {
 	return append(buf1, booleanValue)
 }
 
-func (order ControlOrder) Read(data []byte) {
+func (order *ControlOrder) Read(data []byte) {
 	reader := bytes.NewReader(data)
 	binary.Read(reader, binary.LittleEndian, order)
 }

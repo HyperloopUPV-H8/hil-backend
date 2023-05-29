@@ -40,7 +40,7 @@ func (hilHandler *HilHandler) StartIDLE() {
 		msg := string(msgByte)
 		fmt.Println(msg)
 		switch msg {
-		case "start_simulation": //FIXME: Check in front when it sends the msg
+		case "start_simulation":
 			err := hilHandler.startSimulationState()
 
 			if err != nil {
@@ -57,11 +57,9 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	orderChan := make(chan Order)
 	fmt.Println("Simulation state")
 
-	//FIXME: IT WORKS PROPERLY
 	hilHandler.startListeningData(dataChan, errChan, done)
 	hilHandler.startSendingData(dataChan, errChan, done)
 
-	// From front to HIL
 	hilHandler.startListeningOrders(orderChan, errChan, done)
 	hilHandler.startSendingOrders(orderChan, errChan, done)
 
@@ -80,7 +78,7 @@ func (hilHandler *HilHandler) startSendingData(dataChan <-chan VehicleState, err
 			select {
 			case <-done:
 				return
-			case <-errChan: //FIXME
+			case <-errChan:
 				return
 			case data := <-dataChan:
 				errMarshal := hilHandler.frontConn.WriteJSON(data)
@@ -120,9 +118,6 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- Order, errCh
 			select {
 			case <-done:
 				return
-				//case <-errChan: //FIXME
-				//return
-
 			default:
 				//var order ControlOrder
 				_, msg, errReadJSON := hilHandler.frontConn.ReadMessage()
@@ -133,16 +128,16 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- Order, errCh
 					break
 				}
 				//fmt.Println(stringMsg)
-				if strings.HasPrefix(stringMsg, "{\"variable\":") {
+				if strings.HasPrefix(stringMsg, "{\"id\":") {
 					var order ControlOrder = ControlOrder{}
 					errJSON := json.Unmarshal(msg, &order)
+					fmt.Println("Control order: ", order)
 					if errJSON != nil {
 						//errChan <- errReadJSON
 						fmt.Println("err: ", errJSON)
 						break
 					}
 					orderChan <- order
-					fmt.Println(order)
 				} else if strings.HasPrefix(stringMsg, "[{\"id\":") {
 					var orders FormData = FormData{}
 					errJSON := json.Unmarshal(msg, &orders)
@@ -206,7 +201,7 @@ func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan Order, errChan
 			select {
 			case <-done:
 				return
-			case <-errChan: //FIXME
+			case <-errChan:
 				return
 			case order := <-orderChan:
 				var orderArray []Order = []Order{order} //TODO, it is gonna use arrays or only a order

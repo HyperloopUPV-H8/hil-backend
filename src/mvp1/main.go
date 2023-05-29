@@ -57,7 +57,6 @@ func SendingVehicleStateJSON(conn *websocket.Conn) {
 	ticker := time.NewTicker(2 * time.Second)
 	go func() {
 		for range ticker.C {
-			//TODO: Define msg origin, now it is a mock
 			vehicleState := utilities.RandomVehicleState()
 
 			errMarshal := conn.WriteJSON(vehicleState)
@@ -76,13 +75,12 @@ func receivingPerturbationData(conn *websocket.Conn) {
 	go func() {
 		fmt.Println("Init receiving")
 		for {
-			//TODO: Define struct which it's gonna be received
+
 			perturbationData := &utilities.PerturbationArray{}
 			err := conn.ReadJSON(perturbationData)
 			if err != nil {
 				fmt.Println("Failed")
 			}
-			//TODO: What to do with the formData received
 		}
 	}()
 }

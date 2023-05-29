@@ -60,7 +60,6 @@ func GetAllControlOrders(data []byte) ([]ControlOrder, error) {
 	reader := bytes.NewReader(data)
 	var err error
 	for reader.Len() > 0 { //FIXME?
-		fmt.Println("Len", reader.Len())
 		order := &ControlOrder{}
 		err = binary.Read(reader, binary.LittleEndian, order) // TODO: There is an Error here
 		if err != nil {
