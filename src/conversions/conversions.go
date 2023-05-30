@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"main/models"
 	"math"
+
+	trace "github.com/rs/zerolog/log"
 )
 
 const VEHICLE_STATE_LENGTH = 25
@@ -64,7 +66,7 @@ func GetAllControlOrders(data []byte) ([]models.ControlOrder, error) {
 		order := &models.ControlOrder{}
 		err = binary.Read(reader, binary.LittleEndian, order)
 		if err != nil {
-			fmt.Println("error decoding control orders: ", err)
+			trace.Warn().Msg(fmt.Sprintf("error decoding control orders: %v", err))
 			break
 		}
 		ordersArray = append(ordersArray, *order)

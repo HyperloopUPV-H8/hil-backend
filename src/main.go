@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -20,13 +21,19 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+var traceLevel = flag.String("trace", "info", "set the trace level (\"fatal\", \"error\", \"warn\", \"info\", \"debug\", \"trace\")")
+var traceFile = flag.String("log", "trace.json", "set the trace log file")
+
 func main() {
+	traceFile := initTrace(*traceLevel, *traceFile)
+	defer traceFile.Close()
+
 	config := getConfig("./config.toml")
 
 	hilHandler := NewHilHandler()
 
 	http.HandleFunc(config.Path, func(w http.ResponseWriter, r *http.Request) { handle(w, r, hilHandler, config.Addresses) })
-	fmt.Println("Listening in", config.Addresses.Server_addr+config.Path)
+	trace.Info().Msg("Listening in " + config.Addresses.Server_addr + config.Path)
 	log.Fatal(http.ListenAndServe(config.Addresses.Server_addr, nil))
 
 }
@@ -44,12 +51,15 @@ func handle(w http.ResponseWriter, r *http.Request, hilHandler *HilHandler, addr
 	}
 	if hilHandler.frontConn == nil && remoteHost == addressesConfgi.Frontend {
 		hilHandler.SetFrontConn(conn)
-		fmt.Println("Frontened connected: ", hilHandler, conn.RemoteAddr())
+		frontMsg := fmt.Sprintf("Frontened connected: %v %v", hilHandler, conn.RemoteAddr())
+		trace.Info().Msg(frontMsg)
+
 	}
 
 	if hilHandler.hilConn == nil && remoteHost == addressesConfgi.Hil {
 		hilHandler.SetHilConn(conn)
-		fmt.Println("HIL connected: ", hilHandler, conn.RemoteAddr())
+		hilMsg := fmt.Sprintf("HIL connected: %v %v", hilHandler, conn.RemoteAddr())
+		trace.Info().Msg(hilMsg)
 	}
 
 	if hilHandler.frontConn != nil && hilHandler.hilConn != nil {

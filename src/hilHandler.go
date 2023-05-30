@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	trace "github.com/rs/zerolog/log"
 )
 
 type HilHandler struct {
@@ -31,7 +32,7 @@ func (hilHandler *HilHandler) SetHilConn(conn *websocket.Conn) {
 }
 
 func (hilHandler *HilHandler) StartIDLE() {
-	fmt.Println("IDLE")
+	trace.Info().Msg("IDLE")
 	for {
 		_, msgByte, err := hilHandler.frontConn.ReadMessage()
 		if err != nil {
@@ -54,7 +55,7 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	done := make(chan struct{})
 	dataChan := make(chan models.VehicleState)
 	orderChan := make(chan models.Order)
-	fmt.Println("Simulation state")
+	trace.Info().Msg("Simulation state")
 
 	hilHandler.startListeningData(dataChan, errChan, done)
 	hilHandler.startSendingData(dataChan, errChan, done)
@@ -113,14 +114,14 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order
 				_, msg, errReadJSON := hilHandler.frontConn.ReadMessage()
 				stringMsg := string(msg)
 				if errReadJSON != nil {
-					fmt.Println("err: ", errReadJSON)
+					trace.Error().Err(errReadJSON).Msg("Error reading message from frontend")
 					break
 				}
 				if strings.HasPrefix(stringMsg, "{\"id\":") {
 					var order models.ControlOrder = models.ControlOrder{}
 					errJSON := json.Unmarshal(msg, &order)
 					if errJSON != nil {
-						fmt.Println("err: ", errJSON)
+						trace.Error().Err(errJSON).Msg("Error unmarshalling Control Order")
 						break
 					}
 					orderChan <- order
@@ -128,7 +129,7 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order
 					var orders models.FormData = models.FormData{}
 					errJSON := json.Unmarshal(msg, &orders)
 					if errJSON != nil {
-						fmt.Println("err: ", errReadJSON)
+						trace.Error().Err(errJSON).Msg("Error unmarshalling Form Data")
 						break
 					}
 					frontOrders := conversions.ConvertFormDataToOrders(orders)
@@ -136,7 +137,7 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order
 						orderChan <- frontOrder
 					}
 				} else {
-					fmt.Println("It is not an order")
+					trace.Warn().Msg("It is not an order")
 				}
 			}
 
@@ -158,7 +159,7 @@ func (hilHandler *HilHandler) startListeningData(dataChan chan<- models.VehicleS
 				}
 				data, errDecoding := Decode(msg)
 				if errDecoding != nil {
-					fmt.Println("Error decoding: ", errDecoding)
+					trace.Error().Err(errDecoding).Msg(fmt.Sprintf("Error decoding: %v", errDecoding))
 					continue
 				}
 
@@ -168,7 +169,7 @@ func (hilHandler *HilHandler) startListeningData(dataChan chan<- models.VehicleS
 						dataChan <- d
 					}
 				default:
-					fmt.Println("Does NOT match any type (startListeningData): ", decodedData)
+					trace.Warn().Msg(fmt.Sprintf("Does NOT match any type (startListeningData): %v", decodedData))
 				}
 
 			}

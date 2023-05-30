@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"main/conversions"
 	"main/models"
+
+	trace "github.com/rs/zerolog/log"
 )
 
 const VEHICLE_STATE_ID = 1
@@ -26,13 +27,13 @@ func Encode(data interface{}) []byte {
 		case models.ControlOrder:
 			binary.LittleEndian.PutUint16(head, CONTROL_ORDER_ID)
 		default:
-			fmt.Println("Does NOT match any ORDER type")
+			trace.Warn().Msg("Does NOT match any ORDER type")
 			return nil
 		}
 
 		return Prepend(conversions.GetAllBytesFromOrder(dataType), head...)
 	default:
-		fmt.Println("Does NOT match any type")
+		trace.Warn().Msg("Does NOT match any type")
 		return nil
 	}
 }
@@ -48,7 +49,7 @@ func Decode(data []byte) (any, error) {
 	case CONTROL_ORDER_ID:
 		return conversions.GetAllControlOrders(data[2:])
 	default:
-		fmt.Println("Does NOT match any type")
+		trace.Warn().Msg("Does NOT match any type")
 		return nil, errors.New("does not match any type in decode function")
 	}
 
