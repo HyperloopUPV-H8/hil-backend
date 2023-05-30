@@ -8,7 +8,8 @@ import (
 	"os"
 
 	"github.com/gorilla/websocket"
-	"github.com/joho/godotenv"
+	"github.com/pelletier/go-toml/v2"
+	trace "github.com/rs/zerolog/log"
 )
 
 var upgrader = websocket.Upgrader{
@@ -20,35 +21,17 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
-	// var dataVehicle []byte = []byte{154, 153, 153, 153, 153, 153, 3, 64, 51, 51, 51, 51, 51, 51, 17, 64, 1, 102, 102, 102, 102, 102, 102, 36, 64, 113, 61, 10, 215, 163, 240, 52, 64, 195, 245, 40, 92, 143, 194, 29, 64, 81, 41, 92, 143, 194, 245, 8, 77, 64, 154, 153, 153, 153, 153, 153, 3, 64, 51, 51, 51, 51, 51, 51, 17, 64, 1, 102, 102, 102, 102, 102, 102, 36, 64, 11, 11, 11}
-
-	// result, err := Decode1(dataVehicle)
-	// if err != nil {
-	// 	fmt.Println("Error")
-	// }
-
-	// switch obj := result.(type) {
-	// case []VehicleState:
-	// 	fmt.Println("VehicleState", obj)
-	// default:
-	// 	fmt.Println("Don't know", obj)
-	// }
-
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error al cargar archivo .env")
-	}
+	config := getConfig("./config.toml")
 
 	hilHandler := NewHilHandler()
-	http.HandleFunc(os.Getenv("PATH"), func(w http.ResponseWriter, r *http.Request) { handle(w, r, hilHandler) })
 
-	fmt.Println("Listening in", os.Getenv("SERVER_ADDR")+os.Getenv("PATH"))
-
-	log.Fatal(http.ListenAndServe(os.Getenv("SERVER_ADDR"), nil))
+	http.HandleFunc(config.Path, func(w http.ResponseWriter, r *http.Request) { handle(w, r, hilHandler, config.Addresses) })
+	fmt.Println("Listening in", config.Addresses.Server_addr+config.Path)
+	log.Fatal(http.ListenAndServe(config.Addresses.Server_addr, nil))
 
 }
 
-func handle(w http.ResponseWriter, r *http.Request, hilHandler *HilHandler) {
+func handle(w http.ResponseWriter, r *http.Request, hilHandler *HilHandler, addressesConfgi AddressesCongif) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Error upgrading connection:", err)
@@ -59,15 +42,14 @@ func handle(w http.ResponseWriter, r *http.Request, hilHandler *HilHandler) {
 		log.Println("Error spliting IP:", errSplit)
 		return
 	}
-
-	if hilHandler.frontConn == nil && remoteHost == "127.0.0.1" { //TODO: Establish IP
+	if hilHandler.frontConn == nil && remoteHost == addressesConfgi.Frontend {
 		hilHandler.SetFrontConn(conn)
-		fmt.Println(hilHandler, conn.RemoteAddr())
+		fmt.Println("Frontened connected: ", hilHandler, conn.RemoteAddr())
 	}
 
-	if hilHandler.hilConn == nil && remoteHost == "127.0.0.2" { //TODO: Establish IP from Hil
+	if hilHandler.hilConn == nil && remoteHost == addressesConfgi.Hil {
 		hilHandler.SetHilConn(conn)
-		fmt.Println(hilHandler, conn.RemoteAddr())
+		fmt.Println("HIL connected: ", hilHandler, conn.RemoteAddr())
 	}
 
 	if hilHandler.frontConn != nil && hilHandler.hilConn != nil {
@@ -78,4 +60,18 @@ func handle(w http.ResponseWriter, r *http.Request, hilHandler *HilHandler) {
 		}
 		hilHandler.StartIDLE()
 	}
+}
+
+func getConfig(path string) Config {
+	configFile, fileErr := os.ReadFile(path)
+
+	if fileErr != nil {
+		trace.Fatal().Stack().Err(fileErr).Msg("error reading config file")
+	}
+	var config Config
+	tomlErr := toml.Unmarshal(configFile, &config)
+	if tomlErr != nil {
+		trace.Fatal().Stack().Err(tomlErr).Msg("error unmarshalling toml")
+	}
+	return config
 }

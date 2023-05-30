@@ -1,3 +1,6 @@
+path="/backend"
+
 [addresses]
-backend = "127.0.0.1"
+server_addr="127.0.0.1:8010"
+frontend = "127.0.0.1"
 hil = "127.0.0.2"

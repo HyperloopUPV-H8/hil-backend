@@ -36,9 +36,6 @@ func main() {
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	upgrader.CheckOrigin = func(r *http.Request) bool {
-		//TODO: Check it the origin is correct
-		//origin := r.Header.Get("Origin")
-		//return origin == "http://127.0.0.1:5173/" || origin == "http://10.236.42.103:5173/"
 		return true
 	}
 

@@ -1,27 +1,28 @@
-package main
+package conversions
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"main/models"
 	"math"
 )
 
 const VEHICLE_STATE_LENGTH = 25
 
-func GetVehicleState(data []byte) VehicleState {
+func GetVehicleState(data []byte) models.VehicleState {
 	reader := bytes.NewReader(data)
-	vehicleState := &VehicleState{}
+	vehicleState := &models.VehicleState{}
 	binary.Read(reader, binary.LittleEndian, vehicleState)
 	return *vehicleState
 }
 
-func GetAllVehicleStates(data []byte) ([]VehicleState, error) {
-	vehicleStateArray := []VehicleState{}
+func GetAllVehicleStates(data []byte) ([]models.VehicleState, error) {
+	vehicleStateArray := []models.VehicleState{}
 	reader := bytes.NewReader(data)
 	var err error
 	for i := 0; i <= len(data)-VEHICLE_STATE_LENGTH; i += VEHICLE_STATE_LENGTH {
-		vehicleState := &VehicleState{}
+		vehicleState := &models.VehicleState{}
 		err = binary.Read(reader, binary.LittleEndian, vehicleState)
 		if err != nil {
 			break
@@ -37,7 +38,7 @@ func ConvertFloat64ToBytes(num float64) [8]byte {
 	return buf
 }
 
-func GetBytesFromVehicleState(vehicleState VehicleState) []byte {
+func GetBytesFromVehicleState(vehicleState models.VehicleState) []byte {
 
 	buf1 := ConvertFloat64ToBytes(vehicleState.YDistance)
 	buf2 := ConvertFloat64ToBytes(vehicleState.Current)
@@ -47,7 +48,7 @@ func GetBytesFromVehicleState(vehicleState VehicleState) []byte {
 	return append(append(append(buf1[:], buf2[:]...), buf3[:]...), buf4[:]...)
 }
 
-func GetAllBytesFromVehiclesState(vehiclesState []VehicleState) []byte {
+func GetAllBytesFromVehiclesState(vehiclesState []models.VehicleState) []byte {
 	var result []byte
 	for _, vehicle := range vehiclesState {
 		result = append(result, GetBytesFromVehicleState(vehicle)...)
@@ -55,13 +56,13 @@ func GetAllBytesFromVehiclesState(vehiclesState []VehicleState) []byte {
 	return result
 }
 
-func GetAllControlOrders(data []byte) ([]ControlOrder, error) {
-	ordersArray := []ControlOrder{}
+func GetAllControlOrders(data []byte) ([]models.ControlOrder, error) {
+	ordersArray := []models.ControlOrder{}
 	reader := bytes.NewReader(data)
 	var err error
-	for reader.Len() > 0 { //FIXME?
-		order := &ControlOrder{}
-		err = binary.Read(reader, binary.LittleEndian, order) // TODO: There is an Error here
+	for reader.Len() > 0 {
+		order := &models.ControlOrder{}
+		err = binary.Read(reader, binary.LittleEndian, order)
 		if err != nil {
 			fmt.Println("error decoding control orders: ", err)
 			break
@@ -71,7 +72,7 @@ func GetAllControlOrders(data []byte) ([]ControlOrder, error) {
 	return ordersArray, err
 }
 
-func GetAllBytesFromOrder(data []Order) []byte {
+func GetAllBytesFromOrder(data []models.Order) []byte {
 	var result []byte
 	for _, order := range data {
 		result = append(result, order.Bytes()...)
@@ -79,7 +80,7 @@ func GetAllBytesFromOrder(data []Order) []byte {
 	return result
 }
 
-func GetAllBytesFromControlOrder(data []ControlOrder) []byte {
+func GetAllBytesFromControlOrder(data []models.ControlOrder) []byte {
 	var result []byte
 	for _, order := range data {
 		result = append(result, order.Bytes()...)
@@ -87,12 +88,11 @@ func GetAllBytesFromControlOrder(data []ControlOrder) []byte {
 	return result
 }
 
-func ConvertFormDataToOrders(form FormData) []FrontOrder {
-	var frontOrders []FrontOrder
+func ConvertFormDataToOrders(form models.FormData) []models.FrontOrder {
+	var frontOrders []models.FrontOrder
 	for _, order := range form {
-		if order.Enabled && order.Validity.IsValid { //TODO: Check type
-			frontOrder := FrontOrder{Kind: order.Id, Payload: order.Value}
-			fmt.Println(frontOrder)
+		if order.Enabled && order.Validity.IsValid { //FIXME: Check type, not necessary now
+			frontOrder := models.FrontOrder{Kind: order.Id, Payload: order.Value}
 			frontOrders = append(frontOrders, frontOrder)
 		}
 	}
