@@ -6,7 +6,6 @@ import (
 	"log"
 	"main/conversions"
 	"main/models"
-	"main/mvp1/utilities"
 	"strings"
 	"time"
 
@@ -93,7 +92,7 @@ func (hilHandler *HilHandler) startSendingData(dataChan <-chan models.VehicleSta
 func (hilHandler *HilHandler) mockingSendVehicleState() {
 	ticker := time.NewTicker(2 * time.Second)
 	for range ticker.C {
-		vehicleState := utilities.RandomVehicleState()
+		vehicleState := models.RandomVehicleState()
 
 		errMarshal := hilHandler.frontConn.WriteJSON(vehicleState)
 
@@ -188,8 +187,9 @@ func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan models.Order, 
 			case <-errChan:
 				return
 			case order := <-orderChan:
-				var orderArray []models.Order = []models.Order{order} //FIXME, from now it sends the order when it is received, to be defined if send several in same array
-				encodedOrder := Encode(orderArray)
+				//var orderArray []models.Order = []models.Order{order} //FIXME, from now it sends the order when it is received, to be defined if send several in same array
+				//encodedOrder := Encode(orderArray)
+				encodedOrder := order.Bytes()
 				errMarshal := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, encodedOrder)
 				if errMarshal != nil {
 					log.Println("Error marshalling:", errMarshal)

@@ -77,7 +77,7 @@ func GetAllControlOrders(data []byte) ([]models.ControlOrder, error) {
 func GetAllBytesFromOrder(data []models.Order) []byte {
 	var result []byte
 	for _, order := range data {
-		result = append(result, order.Bytes()...)
+		result = append(result, order.Bytes()...) //FIXME: It is not prepared for arrays, it adds prefix to each order
 	}
 	return result
 }

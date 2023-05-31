@@ -13,7 +13,7 @@ const VEHICLE_STATE_ID = 1
 const FRONT_ORDER_ID = 2
 const CONTROL_ORDER_ID = 3
 
-func Encode(data interface{}) []byte {
+func Encode(data interface{}) []byte { //FIXME: For encode array of structs, order.Bytes implemented for adding always the prefix
 	switch dataType := data.(type) {
 	case []models.VehicleState:
 		head := make([]byte, 2)

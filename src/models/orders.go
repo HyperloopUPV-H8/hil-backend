@@ -5,8 +5,11 @@ import (
 	"encoding/binary"
 )
 
+const FRONT_ORDER_ID = 2
+const CONTROL_ORDER_ID = 3
+
 type Order interface {
-	Bytes() []byte
+	Bytes() []byte //FIXME: Add read? And pass as a pointer
 }
 
 type FrontOrder struct {
@@ -15,10 +18,14 @@ type FrontOrder struct {
 }
 
 func (order FrontOrder) Bytes() []byte {
-	buf1 := []byte(order.Kind)
-	var buf2 [8]byte
-	binary.LittleEndian.PutUint64(buf2[:], uint64(order.Payload))
-	return append(buf1, buf2[:]...)
+	idBuf := make([]byte, 2)
+	binary.LittleEndian.PutUint16(idBuf, FRONT_ORDER_ID)
+	kindBuf := []byte(order.Kind)
+	payloadBuf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(payloadBuf, uint64(order.Payload))
+
+	resultBuf := append(idBuf, kindBuf...)
+	return append(resultBuf, payloadBuf...)
 }
 
 func (order *FrontOrder) Read(data []byte) {
@@ -32,14 +39,16 @@ type ControlOrder struct {
 }
 
 func (order ControlOrder) Bytes() []byte {
-	buf1 := []byte{order.Id}
+	head := make([]byte, 2)
+	binary.LittleEndian.PutUint16(head, CONTROL_ORDER_ID)
+
 	var booleanValue uint8
 	if order.State {
 		booleanValue = 1
 	} else {
 		booleanValue = 0
 	}
-	return append(buf1, booleanValue)
+	return append(head, order.Id, booleanValue)
 }
 
 func (order *ControlOrder) Read(data []byte) {

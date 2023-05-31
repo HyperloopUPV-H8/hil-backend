@@ -32,13 +32,46 @@ func main() {
 
 	hilHandler := NewHilHandler()
 
-	http.HandleFunc(config.Path, func(w http.ResponseWriter, r *http.Request) { handle(w, r, hilHandler, config.Addresses) })
+	server := NewServer()
+
+	server.SetConnHandler(func(conn *websocket.Conn) {
+		remoteHost, _, errSplit := net.SplitHostPort(conn.RemoteAddr().String())
+		if errSplit != nil {
+			log.Println("Error spliting IP:", errSplit)
+			return
+		}
+
+		if hilHandler.frontConn == nil && remoteHost == config.Addresses.Frontend {
+			hilHandler.SetFrontConn(conn)
+			frontMsg := fmt.Sprintf("Frontened connected: %v %v", hilHandler, conn.RemoteAddr())
+			trace.Info().Msg(frontMsg)
+
+		}
+
+		if hilHandler.hilConn == nil && remoteHost == config.Addresses.Hil {
+			hilHandler.SetHilConn(conn)
+			hilMsg := fmt.Sprintf("HIL connected: %v %v", hilHandler, conn.RemoteAddr())
+			trace.Info().Msg(hilMsg)
+		}
+
+		if hilHandler.frontConn != nil && hilHandler.hilConn != nil {
+			errReady := hilHandler.frontConn.WriteMessage(websocket.TextMessage, []byte("Back-end is ready!"))
+			if errReady != nil {
+				log.Println("Error sending ready message:", errReady)
+				return
+			}
+			hilHandler.StartIDLE()
+		}
+	})
+
+	http.Handle(config.Path, &server)
+
 	trace.Info().Msg("Listening in " + config.Addresses.Server_addr + config.Path)
 	log.Fatal(http.ListenAndServe(config.Addresses.Server_addr, nil))
 
 }
 
-func handle(w http.ResponseWriter, r *http.Request, hilHandler *HilHandler, addressesConfgi AddressesCongif) {
+func handle(w http.ResponseWriter, r *http.Request, hilHandler *HilHandler, addressesConfig AddressesConfig) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Error upgrading connection:", err)
@@ -49,14 +82,15 @@ func handle(w http.ResponseWriter, r *http.Request, hilHandler *HilHandler, addr
 		log.Println("Error spliting IP:", errSplit)
 		return
 	}
-	if hilHandler.frontConn == nil && remoteHost == addressesConfgi.Frontend {
+
+	if hilHandler.frontConn == nil && remoteHost == addressesConfig.Frontend {
 		hilHandler.SetFrontConn(conn)
 		frontMsg := fmt.Sprintf("Frontened connected: %v %v", hilHandler, conn.RemoteAddr())
 		trace.Info().Msg(frontMsg)
 
 	}
 
-	if hilHandler.hilConn == nil && remoteHost == addressesConfgi.Hil {
+	if hilHandler.hilConn == nil && remoteHost == addressesConfig.Hil {
 		hilHandler.SetHilConn(conn)
 		hilMsg := fmt.Sprintf("HIL connected: %v %v", hilHandler, conn.RemoteAddr())
 		trace.Info().Msg(hilMsg)
