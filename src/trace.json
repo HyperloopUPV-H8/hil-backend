@@ -1,1 +1,5 @@
-{"level":"info","time":1685550538447984600,"caller":"main.go:70","message":"Listening in 127.0.0.1:8010/backend"}
+{"level":"info","time":1685552527585592900,"caller":"main.go:69","message":"Listening in 127.0.0.1:8010/backend"}
+{"level":"info","time":1685552528555444300,"caller":"main.go:47","message":"Frontened connected: &{0xc00005e000 <nil>} 127.0.0.1:63621"}
+{"level":"info","time":1685552539455249700,"caller":"main.go:54","message":"HIL connected: &{0xc00005e000 0xc0001826e0} 127.0.0.2:63623"}
+{"level":"info","time":1685552539456748200,"caller":"hilHandler.go:34","message":"IDLE"}
+{"level":"info","time":1685552544587731200,"caller":"hilHandler.go:57","message":"Simulation state"}

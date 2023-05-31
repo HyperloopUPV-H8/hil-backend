@@ -63,24 +63,23 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	hilHandler.startSendingOrders(orderChan, errChan, done)
 
 	err := <-errChan
-	done <- struct{}{}
+	close(done)
 
 	return err
 }
 
-func (hilHandler *HilHandler) startSendingData(dataChan <-chan models.VehicleState, errChan <-chan error, done <-chan struct{}) {
+func (hilHandler *HilHandler) startSendingData(dataChan <-chan models.VehicleState, errChan chan<- error, done <-chan struct{}) {
 	go func() {
 
 		for {
 			select {
 			case <-done:
 				return
-			case <-errChan:
-				return
 			case data := <-dataChan:
 				errMarshal := hilHandler.frontConn.WriteJSON(data)
 				if errMarshal != nil {
-					log.Println("Error marshalling:", errMarshal)
+					trace.Error().Err(errMarshal).Msg("Error marshalling")
+					errChan <- errMarshal
 					return
 				}
 			}
@@ -114,6 +113,7 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order
 				stringMsg := string(msg)
 				if errReadJSON != nil {
 					trace.Error().Err(errReadJSON).Msg("Error reading message from frontend")
+					errChan <- errReadJSON
 					break
 				}
 				if strings.HasPrefix(stringMsg, "{\"id\":") {
@@ -177,22 +177,19 @@ func (hilHandler *HilHandler) startListeningData(dataChan chan<- models.VehicleS
 	}()
 }
 
-func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan models.Order, errChan <-chan error, done <-chan struct{}) {
+func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan models.Order, errChan chan<- error, done <-chan struct{}) {
 	go func() {
 
 		for {
 			select {
 			case <-done:
 				return
-			case <-errChan:
-				return
 			case order := <-orderChan:
-				//var orderArray []models.Order = []models.Order{order} //FIXME, from now it sends the order when it is received, to be defined if send several in same array
-				//encodedOrder := Encode(orderArray)
 				encodedOrder := order.Bytes()
 				errMarshal := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, encodedOrder)
 				if errMarshal != nil {
 					log.Println("Error marshalling:", errMarshal)
+					errChan <- errMarshal
 					return
 				}
 			}
