@@ -13,6 +13,8 @@ import (
 	trace "github.com/rs/zerolog/log"
 )
 
+const STOP_MSG = "finish_simulation"
+
 type HilHandler struct {
 	frontConn *websocket.Conn
 	hilConn   *websocket.Conn
@@ -41,6 +43,7 @@ func (hilHandler *HilHandler) StartIDLE() {
 		switch msg {
 		case "start_simulation":
 			err := hilHandler.startSimulationState()
+			trace.Info().Msg("IDLE")
 
 			if err != nil {
 				return
@@ -54,18 +57,27 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	done := make(chan struct{})
 	dataChan := make(chan models.VehicleState)
 	orderChan := make(chan models.Order)
+	stopChan := make(chan struct{})
 	trace.Info().Msg("Simulation state")
 
 	hilHandler.startListeningData(dataChan, errChan, done)
 	hilHandler.startSendingData(dataChan, errChan, done)
 
-	hilHandler.startListeningOrders(orderChan, errChan, done)
+	hilHandler.startListeningOrders(orderChan, errChan, done, stopChan)
 	hilHandler.startSendingOrders(orderChan, errChan, done)
 
-	err := <-errChan
-	close(done)
-
-	return err
+	for {
+		select {
+		case err := <-errChan:
+			close(done)
+			return err
+		case <-stopChan:
+			close(done)
+			fmt.Println("llego aquí")
+			return nil
+		default:
+		}
+	}
 }
 
 func (hilHandler *HilHandler) startSendingData(dataChan <-chan models.VehicleState, errChan chan<- error, done <-chan struct{}) {
@@ -82,6 +94,7 @@ func (hilHandler *HilHandler) startSendingData(dataChan <-chan models.VehicleSta
 					errChan <- errMarshal
 					return
 				}
+			default:
 			}
 
 		}
@@ -102,21 +115,24 @@ func (hilHandler *HilHandler) mockingSendVehicleState() {
 	}
 }
 
-func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order, errChan chan<- error, done <-chan struct{}) {
+func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order, errChan chan<- error, done <-chan struct{}, stopChan chan<- struct{}) {
 	go func() {
 		for {
 			select {
 			case <-done:
 				return
 			default:
-				_, msg, errReadJSON := hilHandler.frontConn.ReadMessage()
+				_, msg, errReadJSON := hilHandler.frontConn.ReadMessage() //FIXME: This block and can't return the done at the moment
 				stringMsg := string(msg)
 				if errReadJSON != nil {
 					trace.Error().Err(errReadJSON).Msg("Error reading message from frontend")
 					errChan <- errReadJSON
 					break
 				}
-				if strings.HasPrefix(stringMsg, "{\"id\":") {
+				if stringMsg == STOP_MSG {
+					trace.Info().Msg("Stop simulation")
+					stopChan <- struct{}{}
+				} else if strings.HasPrefix(stringMsg, "{\"id\":") {
 					var order models.ControlOrder = models.ControlOrder{}
 					errJSON := json.Unmarshal(msg, &order)
 					if errJSON != nil {
@@ -192,6 +208,7 @@ func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan models.Order, 
 					errChan <- errMarshal
 					return
 				}
+			default:
 			}
 
 		}
