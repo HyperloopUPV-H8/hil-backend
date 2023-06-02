@@ -1,11 +1,7 @@
-{"level":"info","time":1685637531693059800,"caller":"main.go:69","message":"Listening in 127.0.0.1:8010/backend"}
-{"level":"info","time":1685637532075174100,"caller":"main.go:47","message":"Frontened connected: &{0xc0001a4000 <nil>} 127.0.0.1:51256"}
-{"level":"info","time":1685637533362554000,"caller":"main.go:54","message":"HIL connected: &{0xc0001a4000 0xc0001a4160} 127.0.0.2:51257"}
-{"level":"info","time":1685637533363071700,"caller":"hilHandler.go:36","message":"IDLE"}
-{"level":"info","time":1685637536581907000,"caller":"hilHandler.go:61","message":"Simulation state"}
-{"level":"info","time":1685637541957762100,"caller":"hilHandler.go:133","message":"Stop simulation"}
-{"level":"info","time":1685637541957762100,"caller":"hilHandler.go:46","message":"IDLE"}
-{"level":"info","time":1685637553990051100,"caller":"hilHandler.go:61","message":"Simulation state"}
-{"level":"info","time":1685637562654283500,"caller":"hilHandler.go:133","message":"Stop simulation"}
-{"level":"info","time":1685637562660552700,"caller":"hilHandler.go:46","message":"IDLE"}
-{"level":"warn","time":1685637568548710900,"caller":"hilHandler.go:155","message":"It is not an order"}
+{"level":"info","time":1685730071710713800,"caller":"main.go:69","message":"Listening in 127.0.0.1:8010/backend"}
+{"level":"info","time":1685730079432899100,"caller":"main.go:47","message":"Frontened connected: &{0xc000098000 <nil>} 127.0.0.1:57580"}
+{"level":"info","time":1685730080496511000,"caller":"main.go:54","message":"HIL connected: &{0xc000098000 0xc0001369a0} 127.0.0.2:57582"}
+{"level":"info","time":1685730080496970800,"caller":"hilHandler.go:36","message":"IDLE"}
+{"level":"info","time":1685730085488508400,"caller":"hilHandler.go:61","message":"Simulation state"}
+{"level":"info","time":1685730113416822100,"caller":"hilHandler.go:133","message":"Stop simulation"}
+{"level":"info","time":1685730113417816400,"caller":"hilHandler.go:46","message":"IDLE"}

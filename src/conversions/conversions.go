@@ -90,13 +90,13 @@ func GetAllBytesFromControlOrder(data []models.ControlOrder) []byte {
 	return result
 }
 
-func ConvertFormDataToOrders(form models.FormData) []models.FrontOrder {
-	var frontOrders []models.FrontOrder
+func ConvertFormDataToOrders(form models.FormData) []models.FormOrder {
+	var formOrders []models.FormOrder
 	for _, order := range form {
 		if order.Enabled && order.Validity.IsValid { //FIXME: Check type, not necessary now
-			frontOrder := models.FrontOrder{Kind: order.Id, Payload: order.Value}
-			frontOrders = append(frontOrders, frontOrder)
+			formOrder := models.FormOrder{Kind: order.Id, Payload: order.Value}
+			formOrders = append(formOrders, formOrder)
 		}
 	}
-	return frontOrders
+	return formOrders
 }

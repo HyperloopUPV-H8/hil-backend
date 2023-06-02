@@ -22,7 +22,7 @@ func Encode(data interface{}) []byte { //FIXME: For encode array of structs, ord
 	case []models.Order:
 		head := make([]byte, 2)
 		switch dataType[0].(type) {
-		case models.FrontOrder:
+		case models.FormOrder:
 			binary.LittleEndian.PutUint16(head, FRONT_ORDER_ID)
 		case models.ControlOrder:
 			binary.LittleEndian.PutUint16(head, CONTROL_ORDER_ID)

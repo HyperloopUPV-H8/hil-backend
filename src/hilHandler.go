@@ -73,7 +73,6 @@ func (hilHandler *HilHandler) startSimulationState() error {
 			return err
 		case <-stopChan:
 			close(done)
-			fmt.Println("llego aquí")
 			return nil
 		default:
 		}
@@ -132,28 +131,11 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order
 				if stringMsg == STOP_MSG {
 					trace.Info().Msg("Stop simulation")
 					stopChan <- struct{}{}
-				} else if strings.HasPrefix(stringMsg, "{\"id\":") {
-					var order models.ControlOrder = models.ControlOrder{}
-					errJSON := json.Unmarshal(msg, &order)
-					if errJSON != nil {
-						trace.Error().Err(errJSON).Msg("Error unmarshalling Control Order")
-						break
-					}
-					orderChan <- order
-				} else if strings.HasPrefix(stringMsg, "[{\"id\":") {
-					var orders models.FormData = models.FormData{}
-					errJSON := json.Unmarshal(msg, &orders)
-					if errJSON != nil {
-						trace.Error().Err(errJSON).Msg("Error unmarshalling Form Data")
-						break
-					}
-					frontOrders := conversions.ConvertFormDataToOrders(orders)
-					for _, frontOrder := range frontOrders {
-						orderChan <- frontOrder
-					}
-				} else {
+					return
+				} else if !addOrderToChan(msg, orderChan) {
 					trace.Warn().Msg("It is not an order")
 				}
+
 			}
 
 		}
@@ -167,7 +149,7 @@ func (hilHandler *HilHandler) startListeningData(dataChan chan<- models.VehicleS
 			case <-done:
 				return
 			default:
-				_, msg, err := hilHandler.hilConn.ReadMessage()
+				_, msg, err := hilHandler.hilConn.ReadMessage() //FIXME, it get block when done is close, if not new msg, it get stuck
 				if err != nil {
 					errChan <- err
 					break
@@ -213,4 +195,41 @@ func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan models.Order, 
 
 		}
 	}()
+}
+
+func prepareFormOrder(msg []byte, orderChan chan<- models.Order) error {
+	var orders models.FormData = models.FormData{}
+	errJSON := json.Unmarshal(msg, &orders)
+	if errJSON != nil {
+		trace.Error().Err(errJSON).Msg("Error unmarshalling Form Data")
+		return errJSON
+	}
+	formOrders := conversions.ConvertFormDataToOrders(orders)
+	for _, formOrder := range formOrders {
+		orderChan <- formOrder
+	}
+	return nil
+}
+
+func addOrderToChan(msg []byte, orderChan chan<- models.Order) bool {
+	stringMsg := string(msg)
+	if strings.HasPrefix(stringMsg, "{\"id\":") {
+		var order models.ControlOrder = models.ControlOrder{}
+		errJSON := json.Unmarshal(msg, &order)
+		if errJSON != nil {
+			trace.Error().Err(errJSON).Msg("Error unmarshalling Control Order")
+			return true
+		}
+		orderChan <- order
+	} else if strings.HasPrefix(stringMsg, "[{\"id\":") {
+		errJSON := prepareFormOrder(msg, orderChan)
+		if errJSON != nil {
+			trace.Error().Err(errJSON).Msg("Error unmarshalling Form Data")
+			return true
+		}
+	} else {
+		return false
+	}
+	return true
+
 }

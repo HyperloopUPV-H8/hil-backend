@@ -12,12 +12,12 @@ type Order interface {
 	Bytes() []byte //FIXME: Add read? And pass as a pointer
 }
 
-type FrontOrder struct {
+type FormOrder struct {
 	Kind    string  `json:"kind"`
 	Payload float64 `json:"payload"`
 }
 
-func (order FrontOrder) Bytes() []byte {
+func (order FormOrder) Bytes() []byte {
 	idBuf := make([]byte, 2)
 	binary.LittleEndian.PutUint16(idBuf, FRONT_ORDER_ID)
 	kindBuf := []byte(order.Kind)
@@ -28,7 +28,7 @@ func (order FrontOrder) Bytes() []byte {
 	return append(resultBuf, payloadBuf...)
 }
 
-func (order *FrontOrder) Read(data []byte) {
+func (order *FormOrder) Read(data []byte) {
 	reader := bytes.NewReader(data)
 	binary.Read(reader, binary.LittleEndian, order)
 }
