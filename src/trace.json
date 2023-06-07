@@ -1,7 +1,11 @@
-{"level":"info","time":1685730071710713800,"caller":"main.go:69","message":"Listening in 127.0.0.1:8010/backend"}
-{"level":"info","time":1685730079432899100,"caller":"main.go:47","message":"Frontened connected: &{0xc000098000 <nil>} 127.0.0.1:57580"}
-{"level":"info","time":1685730080496511000,"caller":"main.go:54","message":"HIL connected: &{0xc000098000 0xc0001369a0} 127.0.0.2:57582"}
-{"level":"info","time":1685730080496970800,"caller":"hilHandler.go:36","message":"IDLE"}
-{"level":"info","time":1685730085488508400,"caller":"hilHandler.go:61","message":"Simulation state"}
-{"level":"info","time":1685730113416822100,"caller":"hilHandler.go:133","message":"Stop simulation"}
-{"level":"info","time":1685730113417816400,"caller":"hilHandler.go:46","message":"IDLE"}
+{"level":"info","time":1686096515101907200,"caller":"main.go:69","message":"Listening in 127.0.0.1:8010/backend"}
+{"level":"info","time":1686096518988745300,"caller":"main.go:54","message":"HIL connected: &{<nil> 0xc000110c60} 127.0.0.2:51293"}
+{"level":"info","time":1686096545276667300,"caller":"main.go:47","message":"Frontened connected: &{0xc000072000 0xc000110c60} 127.0.0.1:51312"}
+{"level":"info","time":1686096545277729100,"caller":"hilHandler.go:38","message":"IDLE"}
+{"level":"info","time":1686096548881760200,"caller":"hilHandler.go:90","message":"Simulation state"}
+{"level":"info","time":1686096561905003500,"caller":"hilHandler.go:161","message":"Finish simulation"}
+{"level":"info","time":1686096561906062300,"caller":"hilHandler.go:55","message":"IDLE"}
+{"level":"warn","time":1686096579066751300,"caller":"hilParser.go:52","message":"Does NOT match any type"}
+{"level":"error","error":"does not match any type in decode function","time":1686096579067323100,"caller":"hilHandler.go:193","message":"Error decoding: does not match any type in decode function"}
+{"level":"error","error":"websocket: RSV1 set, RSV3 set, bad opcode 7, bad MASK","time":1686096581073389100,"caller":"hilHandler.go:73","message":"error receiving message in IDLE"}
+{"level":"error","error":"websocket: RSV1 set, RSV3 set, bad opcode 7, bad MASK","time":1686096581074759400,"caller":"hilHandler.go:50","message":"error informing HIL to start simulation"}

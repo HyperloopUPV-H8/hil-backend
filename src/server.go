@@ -18,7 +18,7 @@ func NewServer() Server {
 
 }
 
-func (server *Server) SetConnHandler(handler func(conn *websocket.Conn)) { //TODO: add as prop handler
+func (server *Server) SetConnHandler(handler func(conn *websocket.Conn)) {
 	server.handleConn = handler
 }
 

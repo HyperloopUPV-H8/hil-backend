@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"main/conversions"
@@ -13,7 +14,8 @@ import (
 	trace "github.com/rs/zerolog/log"
 )
 
-const STOP_MSG = "finish_simulation"
+const START_MSG = "start_simulation"
+const FINISH_SIMULATION = "finish_simulation"
 
 type HilHandler struct {
 	frontConn *websocket.Conn
@@ -37,18 +39,45 @@ func (hilHandler *HilHandler) StartIDLE() {
 	for {
 		_, msgByte, err := hilHandler.frontConn.ReadMessage()
 		if err != nil {
-			log.Fatalf("error receiving message in IDLE: %s", err)
-		}
-		msg := string(msgByte)
-		switch msg {
-		case "start_simulation":
-			err := hilHandler.startSimulationState()
-			trace.Info().Msg("IDLE")
+			trace.Error().Err(err).Msg("error receiving message in IDLE")
+		} else {
+			msg := string(msgByte)
+			switch msg {
+			case START_MSG:
 
-			if err != nil {
-				return
+				errStartingHIL := hilHandler.informStartSimulation()
+				if errStartingHIL != nil {
+					trace.Error().Err(errStartingHIL).Msg("error informing HIL to start simulation")
+					break
+				}
+
+				err := hilHandler.startSimulationState()
+				trace.Info().Msg("IDLE")
+
+				if err != nil {
+					return
+				}
 			}
 		}
+	}
+}
+
+func (hilHandler *HilHandler) informStartSimulation() error {
+	errStarting := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, []byte(START_MSG))
+	if errStarting != nil {
+		trace.Error().Err(errStarting).Msg("Error sending message of starting simultaion to HIL")
+		return errStarting
+	}
+	_, msgByte, err := hilHandler.hilConn.ReadMessage()
+	if err != nil {
+		trace.Error().Err(err).Msg("error receiving message in IDLE")
+		return err
+	} else if string(msgByte) == START_MSG {
+		return nil
+	} else {
+		errReceiving := errors.New("not received correct message from hil")
+		trace.Error().Err(errReceiving).Msg("error receiving message in IDLE")
+		return errReceiving
 	}
 }
 
@@ -126,10 +155,15 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order
 				if errReadJSON != nil {
 					trace.Error().Err(errReadJSON).Msg("Error reading message from frontend")
 					errChan <- errReadJSON
-					break
+					return //FIXME: Before it was a break
 				}
-				if stringMsg == STOP_MSG {
-					trace.Info().Msg("Stop simulation")
+				if stringMsg == FINISH_SIMULATION {
+					trace.Info().Msg("Finish simulation")
+					errStoping := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, []byte(FINISH_SIMULATION))
+					if errStoping != nil {
+						trace.Error().Err(errStoping).Msg("Error sending finish simulation to HIL")
+						errChan <- errStoping
+					}
 					stopChan <- struct{}{}
 					return
 				} else if !addOrderToChan(msg, orderChan) {
