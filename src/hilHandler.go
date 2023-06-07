@@ -14,7 +14,7 @@ import (
 	trace "github.com/rs/zerolog/log"
 )
 
-const START_MSG = "start_simulation"
+const START_SIMULATION = "start_simulation"
 const FINISH_SIMULATION = "finish_simulation"
 
 type HilHandler struct {
@@ -36,14 +36,15 @@ func (hilHandler *HilHandler) SetHilConn(conn *websocket.Conn) {
 
 func (hilHandler *HilHandler) StartIDLE() {
 	trace.Info().Msg("IDLE")
-	for {
+	ticker := time.NewTicker(1 * time.Second)
+	for range ticker.C {
 		_, msgByte, err := hilHandler.frontConn.ReadMessage()
 		if err != nil {
 			trace.Error().Err(err).Msg("error receiving message in IDLE")
 		} else {
 			msg := string(msgByte)
 			switch msg {
-			case START_MSG:
+			case START_SIMULATION:
 
 				errStartingHIL := hilHandler.informStartSimulation()
 				if errStartingHIL != nil {
@@ -63,7 +64,7 @@ func (hilHandler *HilHandler) StartIDLE() {
 }
 
 func (hilHandler *HilHandler) informStartSimulation() error {
-	errStarting := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, []byte(START_MSG))
+	errStarting := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, []byte(START_SIMULATION))
 	if errStarting != nil {
 		trace.Error().Err(errStarting).Msg("Error sending message of starting simultaion to HIL")
 		return errStarting
@@ -72,7 +73,7 @@ func (hilHandler *HilHandler) informStartSimulation() error {
 	if err != nil {
 		trace.Error().Err(err).Msg("error receiving message in IDLE")
 		return err
-	} else if string(msgByte) == START_MSG {
+	} else if string(msgByte) == START_SIMULATION {
 		return nil
 	} else {
 		errReceiving := errors.New("not received correct message from hil")
@@ -150,7 +151,7 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order
 			case <-done:
 				return
 			default:
-				_, msg, errReadJSON := hilHandler.frontConn.ReadMessage() //FIXME: This block and can't return the done at the moment
+				_, msg, errReadJSON := hilHandler.frontConn.ReadMessage()
 				stringMsg := string(msg)
 				if errReadJSON != nil {
 					trace.Error().Err(errReadJSON).Msg("Error reading message from frontend")
@@ -187,6 +188,10 @@ func (hilHandler *HilHandler) startListeningData(dataChan chan<- models.VehicleS
 				if err != nil {
 					errChan <- err
 					break
+				}
+				if string(msg) == FINISH_SIMULATION {
+					trace.Info().Msg("HIL received finish simulation")
+					return
 				}
 				data, errDecoding := Decode(msg)
 				if errDecoding != nil {
