@@ -37,18 +37,18 @@ func main() {
 	server.SetConnHandler(func(conn *websocket.Conn) {
 		remoteHost, _, errSplit := net.SplitHostPort(conn.RemoteAddr().String())
 		if errSplit != nil {
-			log.Println("Error spliting IP:", errSplit)
+			trace.Error().Err(errSplit).Msg("Error spliting IP")
 			return
 		}
 
-		if hilHandler.frontConn == nil && remoteHost == config.Addresses.Frontend {
+		if remoteHost == config.Addresses.Frontend {
 			hilHandler.SetFrontConn(conn)
 			frontMsg := fmt.Sprintf("Frontened connected: %v %v", hilHandler, conn.RemoteAddr())
 			trace.Info().Msg(frontMsg)
 
 		}
 
-		if hilHandler.hilConn == nil && remoteHost == config.Addresses.Hil {
+		if remoteHost == config.Addresses.Hil {
 			hilHandler.SetHilConn(conn)
 			hilMsg := fmt.Sprintf("HIL connected: %v %v", hilHandler, conn.RemoteAddr())
 			trace.Info().Msg(hilMsg)
@@ -57,10 +57,11 @@ func main() {
 		if hilHandler.frontConn != nil && hilHandler.hilConn != nil {
 			errReady := hilHandler.frontConn.WriteMessage(websocket.TextMessage, []byte("Back-end is ready!"))
 			if errReady != nil {
-				log.Println("Error sending ready message:", errReady)
+				trace.Error().Err(errReady).Msg("Error sending ready message")
 				return
 			}
 			hilHandler.StartIDLE()
+			trace.Warn().Msg("Exit IDLE, waiting for connections")
 		}
 	})
 

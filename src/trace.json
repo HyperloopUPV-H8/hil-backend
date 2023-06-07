@@ -1,2 +1,31 @@
-{"level":"info","time":1686106747972493500,"caller":"main.go:71","message":"Listening in 127.0.0.1:8010/backend"}
-{"level":"info","time":1686106750277176900,"caller":"main.go:49","message":"Frontened connected: &{0xc000196000 <nil>} 127.0.0.1:60682"}
+{"level":"info","time":1686160122689526000,"caller":"main.go:71","message":"Listening in 127.0.0.1:8010/backend"}
+{"level":"info","time":1686160127634298500,"caller":"main.go:48","message":"Frontened connected: &{0xc000110840 <nil>} 127.0.0.1:64421"}
+{"level":"info","time":1686160133864877500,"caller":"main.go:55","message":"HIL connected: &{0xc000110840 0xc0001109a0} 127.0.0.2:64423"}
+{"level":"info","time":1686160133867185600,"caller":"hilHandler.go:39","message":"IDLE"}
+{"level":"info","time":1686160136995686400,"caller":"hilHandler.go:102","message":"Simulation state"}
+{"level":"info","time":1686160143570895200,"caller":"hilHandler.go:175","message":"Finish simulation"}
+{"level":"info","time":1686160143573255000,"caller":"hilHandler.go:67","message":"IDLE"}
+{"level":"info","time":1686160143583112100,"caller":"hilHandler.go:210","message":"HIL received finish simulation"}
+{"level":"info","time":1686160146953367000,"caller":"hilHandler.go:102","message":"Simulation state"}
+{"level":"info","time":1686160152475616000,"caller":"hilHandler.go:175","message":"Finish simulation"}
+{"level":"info","time":1686160152477114700,"caller":"hilHandler.go:67","message":"IDLE"}
+{"level":"info","time":1686160152477114700,"caller":"hilHandler.go:210","message":"HIL received finish simulation"}
+{"level":"error","error":"websocket: close 1001 (going away)","time":1686160153927455100,"caller":"hilHandler.go:49","message":"error receiving message in IDLE"}
+{"level":"warn","time":1686160153928483700,"caller":"main.go:65","message":"Exit IDLE, waiting for connections"}
+{"level":"info","time":1686160157108995700,"caller":"main.go:48","message":"Frontened connected: &{0xc000382000 0xc0001109a0} 127.0.0.1:64434"}
+{"level":"info","time":1686160157114127700,"caller":"hilHandler.go:39","message":"IDLE"}
+{"level":"info","time":1686160160713179900,"caller":"hilHandler.go:102","message":"Simulation state"}
+{"level":"info","time":1686160167045589100,"caller":"hilHandler.go:175","message":"Finish simulation"}
+{"level":"info","time":1686160167046493100,"caller":"hilHandler.go:67","message":"IDLE"}
+{"level":"info","time":1686160167052129900,"caller":"hilHandler.go:210","message":"HIL received finish simulation"}
+{"level":"info","time":1686160170228364200,"caller":"hilHandler.go:102","message":"Simulation state"}
+{"level":"error","error":"read tcp 127.0.0.1:8010->127.0.0.2:64423: wsarecv: An existing connection was forcibly closed by the remote host.","time":1686160173863207800,"caller":"hilHandler.go:205","message":"Error reading message from HIL"}
+{"level":"error","error":"read tcp 127.0.0.1:8010->127.0.0.2:64423: wsarecv: An existing connection was forcibly closed by the remote host.","time":1686160173863738400,"caller":"hilHandler.go:205","message":"Error reading message from HIL"}
+{"level":"warn","time":1686160173864876200,"caller":"main.go:65","message":"Exit IDLE, waiting for connections"}
+{"level":"info","time":1686160180958202300,"caller":"main.go:55","message":"HIL connected: &{0xc000382000 0xc000382160} 127.0.0.2:64436"}
+{"level":"info","time":1686160180960654200,"caller":"hilHandler.go:39","message":"IDLE"}
+{"level":"warn","time":1686160183907411800,"caller":"hilHandler.go:184","message":"It is not an order"}
+{"level":"error","error":"websocket: bad opcode 3, bad MASK","time":1686160189782130800,"caller":"hilHandler.go:49","message":"error receiving message in IDLE"}
+{"level":"warn","time":1686160189784841100,"caller":"main.go:65","message":"Exit IDLE, waiting for connections"}
+{"level":"info","time":1686160194859815100,"caller":"main.go:48","message":"Frontened connected: &{0xc0003822c0 0xc000382160} 127.0.0.1:64441"}
+{"level":"info","time":1686160194861207000,"caller":"hilHandler.go:39","message":"IDLE"}

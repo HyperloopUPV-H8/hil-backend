@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,12 +37,20 @@ func (hilHandler *HilHandler) SetHilConn(conn *websocket.Conn) {
 
 func (hilHandler *HilHandler) StartIDLE() {
 	trace.Info().Msg("IDLE")
-	ticker := time.NewTicker(1 * time.Second)
-	for range ticker.C {
-		_, msgByte, err := hilHandler.frontConn.ReadMessage()
-		if err != nil {
-			trace.Error().Err(err).Msg("error receiving message in IDLE")
-		} else {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			_, msgByte, err := hilHandler.frontConn.ReadMessage()
+			if err != nil {
+				trace.Error().Err(err).Msg("error receiving message in IDLE")
+				cancel()
+				continue
+			}
+
 			msg := string(msgByte)
 			switch msg {
 			case START_SIMULATION:
@@ -49,13 +58,15 @@ func (hilHandler *HilHandler) StartIDLE() {
 				errStartingHIL := hilHandler.informStartSimulation()
 				if errStartingHIL != nil {
 					trace.Error().Err(errStartingHIL).Msg("error informing HIL to start simulation")
+					cancel()
 					break
 				}
 
-				err := hilHandler.startSimulationState()
-				trace.Info().Msg("IDLE")
+				err := hilHandler.startSimulationState(ctx, cancel)
+				if err == nil {
+					trace.Info().Msg("IDLE")
 
-				if err != nil {
+				} else if err != nil {
 					return
 				}
 			}
@@ -82,7 +93,7 @@ func (hilHandler *HilHandler) informStartSimulation() error {
 	}
 }
 
-func (hilHandler *HilHandler) startSimulationState() error {
+func (hilHandler *HilHandler) startSimulationState(ctx context.Context, cancel context.CancelFunc) error {
 	errChan := make(chan error)
 	done := make(chan struct{})
 	dataChan := make(chan models.VehicleState)
@@ -90,16 +101,16 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	stopChan := make(chan struct{})
 	trace.Info().Msg("Simulation state")
 
-	hilHandler.startListeningData(dataChan, errChan, done)
-	hilHandler.startSendingData(dataChan, errChan, done)
+	hilHandler.startListeningData(dataChan, errChan, ctx, done)
+	hilHandler.startSendingData(dataChan, errChan, ctx, done)
 
-	hilHandler.startListeningOrders(orderChan, errChan, done, stopChan)
-	hilHandler.startSendingOrders(orderChan, errChan, done)
+	hilHandler.startListeningOrders(orderChan, errChan, ctx, stopChan)
+	hilHandler.startSendingOrders(orderChan, errChan, ctx, done)
 
 	for {
 		select {
 		case err := <-errChan:
-			close(done)
+			cancel()
 			return err
 		case <-stopChan:
 			close(done)
@@ -109,12 +120,13 @@ func (hilHandler *HilHandler) startSimulationState() error {
 	}
 }
 
-func (hilHandler *HilHandler) startSendingData(dataChan <-chan models.VehicleState, errChan chan<- error, done <-chan struct{}) {
+func (hilHandler *HilHandler) startSendingData(dataChan <-chan models.VehicleState, errChan chan<- error, ctx context.Context, done <-chan struct{}) {
 	go func() {
-
 		for {
 			select {
 			case <-done:
+				return
+			case <-ctx.Done():
 				return
 			case data := <-dataChan:
 				errMarshal := hilHandler.frontConn.WriteJSON(data)
@@ -144,11 +156,11 @@ func (hilHandler *HilHandler) mockingSendVehicleState() {
 	}
 }
 
-func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order, errChan chan<- error, done <-chan struct{}, stopChan chan<- struct{}) {
+func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order, errChan chan<- error, ctx context.Context, stopChan chan<- struct{}) {
 	go func() {
 		for {
 			select {
-			case <-done:
+			case <-ctx.Done():
 				return
 			default:
 				_, msg, errReadJSON := hilHandler.frontConn.ReadMessage()
@@ -177,15 +189,19 @@ func (hilHandler *HilHandler) startListeningOrders(orderChan chan<- models.Order
 	}()
 }
 
-func (hilHandler *HilHandler) startListeningData(dataChan chan<- models.VehicleState, errChan chan<- error, done <-chan struct{}) {
+func (hilHandler *HilHandler) startListeningData(dataChan chan<- models.VehicleState, errChan chan<- error, ctx context.Context, done <-chan struct{}) {
 	go func() {
 		for {
 			select {
 			case <-done:
 				return
+			case <-ctx.Done():
+				return
 			default:
 				_, msg, err := hilHandler.hilConn.ReadMessage() //FIXME, it get block when done is close, if not new msg, it get stuck
+
 				if err != nil {
+					trace.Error().Err(err).Msg("Error reading message from HIL")
 					errChan <- err
 					break
 				}
@@ -214,18 +230,20 @@ func (hilHandler *HilHandler) startListeningData(dataChan chan<- models.VehicleS
 	}()
 }
 
-func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan models.Order, errChan chan<- error, done <-chan struct{}) {
+func (hilHandler *HilHandler) startSendingOrders(orderChan <-chan models.Order, errChan chan<- error, ctx context.Context, done <-chan struct{}) {
 	go func() {
 
 		for {
 			select {
 			case <-done:
 				return
+			case <-ctx.Done():
+				return
 			case order := <-orderChan:
 				encodedOrder := order.Bytes()
 				errMarshal := hilHandler.hilConn.WriteMessage(websocket.BinaryMessage, encodedOrder)
 				if errMarshal != nil {
-					log.Println("Error marshalling:", errMarshal)
+					trace.Error().Err(errMarshal).Msg("Error unmarshalling order")
 					errChan <- errMarshal
 					return
 				}
